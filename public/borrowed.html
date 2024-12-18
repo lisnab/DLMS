@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Borrowed</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/borrowed.css">
+    <style>
+        .overdue {
+            color: red;
+            font-weight: bold;
+        }
+        .fine-amount {
+            color: orange;
+            font-weight: bold;
+        }
+        .magazine-card {
+            border: 1px solid #ddd;
+            padding: 16px;
+            margin: 8px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+            transition: transform 0.2s;
+            width: 300px;
+        }
+        .magazine-card:hover {
+            transform: scale(1.05);
+        }
+        .section-title {
+            margin-top: 24px;
+            font-size: 1.5em;
+            color: #333;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 8px;
+        }
+        .magazine-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            justify-content: flex-start;
+            margin-bottom: 24px;
+        }
+        .main-content {
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar" style="position: fixed;">
+        <div class="sidebar-title">eShelf</div>
+        <nav class="sidebar-nav">
+            <a href="user_dashboard.html" class="sidebar-menu-item">
+                <i class="fas fa-book"></i> Dashboard
+            </a>
+            <a href="borrowed.html" class="sidebar-menu-item active">
+                <i class="fas fa-book-open"></i>  Borrowed Books
+            </a>
+        </nav>
+        <div class="logout-container">
+            <button class="profile-btn" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <h1 class="dashboard-title">Borrowed Books</h1>
+        <div class="dashboard-cards" id="borrowed-books-container">
+            <!-- Borrowed books will be dynamically generated here -->
+        </div>
+        <div class="message">
+            <p id="no-borrowed-books-message" style="display: none; text-align: start;">No Borrowed Books.</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const username = localStorage.getItem('username');
+            if (username) {
+                await loadBorrowedBooks(username);
+            }
+        });
+
+        async function loadBorrowedBooks(username) {
+            try {
+                const response = await fetch(`/api/issued-books/${username}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch borrowed books');
+                }
+                const borrowedBooks = await response.json();
+                renderBorrowedBooks(borrowedBooks);
+            } catch (error) {
+                console.error('Error loading borrowed books:', error);
+            }
+        }
+
+        function renderBorrowedBooks(borrowedBooks) {
+            const borrowedBooksContainer = document.getElementById('borrowed-books-container');
+            const noBorrowedBooksMessage = document.getElementById('no-borrowed-books-message');
+            borrowedBooksContainer.innerHTML = '';
+
+            if (borrowedBooks.length === 0) {
+                noBorrowedBooksMessage.style.display = 'block';
+            } else {
+                noBorrowedBooksMessage.style.display = 'none';
+                const sections = {};
+
+                borrowedBooks.forEach(book => {
+                    const dueDate = new Date(book.dueDate);
+                    const currentDate = new Date();
+                    const isOverdue = currentDate > dueDate;
+                    const daysOverdue = isOverdue ? Math.floor((currentDate - dueDate) / (1000 * 60 * 60 * 24)) : 0;
+                    const fineAmount = daysOverdue * 25; // Assuming a fine of 25 PHP per day
+
+                    const bookCard = document.createElement('div');
+                    bookCard.className = 'magazine-card';
+                    bookCard.innerHTML = `
+                        <h3>${book.bookName}</h3>
+                        <p>Book ID: ${book.bookId}</p>
+                        <p>Issue Date: ${book.issueDate}</p>
+                        <p>Due Date: ${book.dueDate}</p>
+                        <p>Status: ${book.returnDate ? 'Returned' : isOverdue ? '<span class="overdue">Overdue</span>' : 'Borrowed'}</p>
+                        ${isOverdue ? `<p>Days Overdue: ${daysOverdue}</p><p class="fine-amount">Fines Amount: ₱${fineAmount.toFixed(2)}</p>` : ''}
+                    `;
+
+                    if (!sections[book.section]) {
+                        sections[book.section] = {
+                            active: [],
+                            overdue: [],
+                            returned: []
+                        };
+                    }
+
+                    if (book.returnDate) {
+                        sections[book.section].returned.push(bookCard);
+                    } else if (isOverdue) {
+                        sections[book.section].overdue.push(bookCard);
+                    } else {
+                        sections[book.section].active.push(bookCard);
+                    }
+                });
+
+                for (const section in sections) {
+                    const sectionContainer = document.createElement('div');
+                    sectionContainer.className = 'section';
+
+                    const activeTitle = document.createElement('h3');
+                    activeTitle.textContent = 'Active Books';
+                    sectionContainer.appendChild(activeTitle);
+                    const activeList = document.createElement('div');
+                    activeList.className = 'magazine-list';
+                    sections[section].active.forEach(card => activeList.appendChild(card));
+                    sectionContainer.appendChild(activeList);
+
+                    const overdueTitle = document.createElement('h3');
+                    overdueTitle.textContent = 'Overdue Books';
+                    sectionContainer.appendChild(overdueTitle);
+                    const overdueList = document.createElement('div');
+                    overdueList.className = 'magazine-list';
+                    sections[section].overdue.forEach(card => overdueList.appendChild(card));
+                    sectionContainer.appendChild(overdueList);
+
+                    const returnedTitle = document.createElement('h3');
+                    returnedTitle.textContent = 'Returned Books';
+                    sectionContainer.appendChild(returnedTitle);
+                    const returnedList = document.createElement('div');
+                    returnedList.className = 'magazine-list';
+                    sections[section].returned.forEach(card => returnedList.appendChild(card));
+                    sectionContainer.appendChild(returnedList);
+
+                    borrowedBooksContainer.appendChild(sectionContainer);
+                }
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('username');
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

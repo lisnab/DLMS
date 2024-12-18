@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DLMS Dashboard</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles/dashboard.css" />
+  </head>
+  <body>
+    <div class="sidebar">
+      <div class="sidebar-title">eShelf</div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html" class="active"
+          ><span class="icon">📊</span> Dashboard</a
+        >
+        <a href="bookmanagement.html"
+          ><span class="icon">📚</span> Book Management</a
+        >
+        <a href="Issue.html"><span class="icon">📝</span> Issue&Return Management</a>
+        <a href="membermanagement.html"><span class="icon">👥</span> Member Management</a>
+        <a href="fines.html"><span class="icon">💰</span> Fines</a>
+      </nav>
+      <div class="logout-container">
+        <button class="profile-btn" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+    </div>
+    </div>
+
+    <div class="main-content">
+      <h1 id="username-display"></h1>
+      <div class="dashboard-cards">
+        <div class="dashboard-card">
+          <h2 class="dashboard-card-title">Total Books</h2>
+          <div class="dashboard-card-content" id="total-books">Loading...</div>
+        </div>
+        <div class="dashboard-card">
+          <h2 class="dashboard-card-title">Issued Books</h2>
+          <div class="dashboard-card-content" id="issued-books">Loading...</div>
+        </div>
+        <div class="dashboard-card">
+          <h2 class="dashboard-card-title">Returned Books</h2>
+          <div class="dashboard-card-content" id="returned-books">Loading...</div>
+        </div>
+        <div class="dashboard-card">
+          <h2 class="dashboard-card-title">Overdue Books</h2>
+          <div class="dashboard-card-content" id="overdue-books">Loading...</div>
+        </div>
+        <div class="dashboard-card">
+          <h2 class="dashboard-card-title">Total Members</h2>
+          <div class="dashboard-card-content" id="total-members">Loading...</div>
+        </div>
+      </div>
+    </div>
+    <script>
+      document.addEventListener('DOMContentLoaded', async () => {
+        const username = localStorage.getItem('username');
+        if (username) {
+          document.getElementById('username-display').textContent = `Hello, ${username}`;
+        }
+
+        try {
+          const [booksResponse, issuedBooksResponse, returnedBooksResponse, membersResponse] = await Promise.all([
+            fetch('/api/books'),
+            fetch('/api/issued-books'),
+            fetch('/api/returned-books'),
+            fetch('/api/members')
+          ]);
+
+          if (!booksResponse.ok || !issuedBooksResponse.ok || !returnedBooksResponse.ok || !membersResponse.ok) {
+            throw new Error('Failed to fetch data');
+          }
+
+          const books = await booksResponse.json();
+          const issuedBooks = await issuedBooksResponse.json();
+          const returnedBooks = await returnedBooksResponse.json();
+          const members = await membersResponse.json();
+
+          const overdueBooks = issuedBooks.filter(book => {
+            const dueDate = new Date(book.dueDate);
+            const currentDate = new Date();
+            return currentDate > dueDate && !book.returnDate;
+          });
+
+          document.getElementById('total-books').textContent = books.length;
+          document.getElementById('issued-books').textContent = issuedBooks.length;
+          document.getElementById('returned-books').textContent = returnedBooks.length;
+          document.getElementById('overdue-books').textContent = overdueBooks.length;
+          document.getElementById('total-members').textContent = members.length;
+        } catch (error) {
+          console.error('Error loading dashboard data:', error);
+          document.getElementById('total-books').textContent = 'Error';
+          document.getElementById('issued-books').textContent = 'Error';
+          document.getElementById('returned-books').textContent = 'Error';
+          document.getElementById('overdue-books').textContent = 'Error';
+          document.getElementById('total-members').textContent = 'Error';
+        }
+      });
+
+      function logout() {
+        localStorage.removeItem('username');
+        window.location.href = 'login.html';
+      }
+    </script>
+  </body>
+</html>

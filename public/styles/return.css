@@ -1,0 +1,265 @@
+body {
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f9fafb;
+    display: flex;
+    min-height: 100vh;
+  }
+  
+  .sidebar {
+    background-color: #0fb44b;
+    color: white;
+    padding: 20px;
+    width: 300px;
+    box-sizing: border-box;
+  }
+  
+  .sidebar-title {
+    font-size: 2rem;
+    font-weight: 700;
+    padding-top: 12px;
+    margin-bottom: 40px;
+    text-align: center;
+  }
+  
+  .sidebar-nav a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px;
+    color: white;
+    text-decoration: none;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+  }
+  
+  .sidebar-nav a:hover,
+  .sidebar-nav a.active {
+    background-color: #07a842;
+  }
+  
+  .main-content {
+    flex-grow: 1;
+    padding: 30px;
+  }
+  
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+  }
+  
+  .search-bar {
+    display: flex;
+    align-items: center;
+    background-color: white;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .search-bar input {
+    border: none;
+    outline: none;
+    font-size: 1rem;
+    width: 300px;
+  }
+  
+  .profile-dropdown {
+    position: relative;
+  }
+  
+  .profile-btn {
+    color: white;
+    background-color: #1ebc58;
+    padding: 10px 50px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.20rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  
+  .profile-menu {
+    display: none;
+    position: absolute;
+    top: -350%;
+    right: 0;
+    left: 30%;
+    background-color: white;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
+    overflow: hidden;
+    z-index: 10;
+  }
+  
+  .profile-menu a {
+    display: block;
+    padding: 10px 20px;
+    color: #374151;
+    text-decoration: none;
+    font-size: 1rem;
+    transition: background-color 0.3s ease;
+  }
+  
+  .profile-menu a:hover {
+    background-color: #f3f4f6;
+  }
+  
+  .profile-dropdown:hover .profile-menu {
+    display: block;
+  }
+  
+  .dashboard-title {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 30px;
+  }
+  
+  .dashboard-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-gap: 20px;
+  }
+  
+  .dashboard-card {
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    text-decoration: none;
+    color: #1f2937;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .dashboard-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  }
+  
+  .dashboard-card-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  
+  .dashboard-card-content {
+    font-size: 1rem;
+    color: #4b5563;
+  }
+  
+  .container {
+    padding: 20px;
+    margin-top: 370px;
+  }
+  
+  h1 {
+    text-align: center;
+    color: #333;
+  }
+  
+  .form-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  
+  .form-container input,
+  .form-container select {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    min-width: 100px;
+  }
+  
+  .btn {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .btn-add {
+    background-color: #4CAF50;
+    color: white;
+  }
+  
+  .btn-update {
+    background-color: #2196F3;
+    color: white;
+  }
+  
+  .btn-delete {
+    background-color: #f44336;
+    color: white;
+  }
+  
+  .btn-return {
+    background-color: #ff9800;
+    color: white;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+  
+  table, th, td {
+    border: 1px solid #ddd;
+  }
+  
+  th, td {
+    padding: 12px;
+    text-align: left;
+  }
+  
+  th {
+    background-color: #f2f2f2;
+  }
+  
+  #editModal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  
+  .modal-content {
+    background-color: white;
+    margin: 10% auto;
+    padding: 20px;
+    border-radius: 8px;
+    width: 80%;
+    max-width: 500px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .modal-content input,
+  .modal-content select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  
+  .overdue {
+    color: red;
+  }

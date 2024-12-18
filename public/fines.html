@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fines</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/fines.css">
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-title">eShelf</div>
+        <nav class="sidebar-nav">
+            <a href="dashboard.html"><span class="icon">📊</span> Dashboard</a>
+            <a href="bookmanagement.html"><span class="icon">📚</span> Book Management</a>
+            <a href="Issue.html"><span class="icon">📝</span> Issue&Return Management</a>
+            <a href="membermanagement.html"><span class="icon">👥</span> Member Management</a>
+            <a href="fines.html" class="active"><span class="icon">💰</span> Fines</a>
+        </nav>
+        <div class="logout-container">
+            <button class="profile-btn" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <h1>Overdue Books and Fines</h1>
+        <div class="form-container">
+            <input type="text" id="searchInput" placeholder="Search by Student ID" oninput="searchFines()">
+        </div>
+        <table id="finesTable">
+            <thead>
+                <tr>
+                    <th>Book ID</th>
+                    <th>Book Name</th>
+                    <th>Student ID</th>
+                    <th>Student Name</th>
+                    <th>Due Date</th>
+                    <th>Days Overdue</th>
+                    <th>Fine Amount (PHP)</th>
+                </tr>
+            </thead>
+            <tbody id="finesList"></tbody>
+        </table>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadFines();
+        });
+
+        let overdueBooks = [];
+
+        async function loadFines() {
+            try {
+                const response = await fetch('/api/issued-books');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch issued books');
+                }
+                const issuedBooks = await response.json();
+                overdueBooks = issuedBooks.filter(book => {
+                    const dueDate = new Date(book.dueDate);
+                    const currentDate = new Date();
+                    return currentDate > dueDate && !book.returnDate;
+                });
+                renderFines(overdueBooks);
+            } catch (error) {
+                console.error('Error loading fines:', error);
+            }
+        }
+
+        function renderFines(books) {
+            const finesList = document.getElementById('finesList');
+            finesList.innerHTML = '';
+
+            books.forEach(book => {
+                const dueDate = new Date(book.dueDate);
+                const currentDate = new Date();
+                const daysOverdue = Math.floor((currentDate - dueDate) / (1000 * 60 * 60 * 24));
+                const fineAmount = daysOverdue * 25; // Assuming a fine of 25 PHP per day
+
+                const row = `
+                    <tr>
+                        <td>${book.bookId}</td>
+                        <td>${book.bookName}</td>
+                        <td>${book.studentId}</td>
+                        <td>${book.studentName}</td>
+                        <td>${book.dueDate}</td>
+                        <td>${daysOverdue}</td>
+                        <td>₱${fineAmount.toFixed(2)}</td>
+                    </tr>
+                `;
+                finesList.insertAdjacentHTML('beforeend', row);
+            });
+        }
+
+        function searchFines() {
+            const searchInput = document.getElementById('searchInput').value.toLowerCase();
+            const filteredBooks = overdueBooks.filter(book =>
+                book.studentId.toLowerCase().includes(searchInput)
+            );
+            renderFines(filteredBooks);
+        }
+
+        function logout() {
+            localStorage.removeItem('username');
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

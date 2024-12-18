@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Member Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/membermanagement.css">
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-title">eShelf</div>
+        <nav class="sidebar-nav">
+            <a href="dashboard.html"><span class="icon">📊</span> Dashboard</a>
+            <a href="bookmanagement.html"><span class="icon">📚</span> Book Management</a>
+            <a href="Issue.html"><span class="icon">📝</span> Issue&Return Management</a>
+            <a href="membermanagement.html" class="active"><span class="icon">👥</span> Member Management</a>
+            <a href="fines.html"><span class="icon">💰</span> Fines</a>
+        </nav>
+        <div class="logout-container">
+            <button class="profile-btn">
+                <a href="login.html">Logout</a>
+            </button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <h1>Member Management</h1>
+
+        <!-- Search Bar -->
+        <div class="form-container">
+            <input type="text" id="searchInput" placeholder="Search members by name, email, or phone" oninput="memberManager.searchMembers()">
+        </div>
+
+        <!-- Member Table -->
+        <table id="memberTable">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Role</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="memberList"></tbody>
+        </table>
+    </div>
+
+    <script>
+        class MemberManager {
+            constructor() {
+                this.members = [];
+                this.loadMembers();
+            }
+
+            async loadMembers() {
+                try {
+                    const response = await fetch('/api/members');
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch members');
+                    }
+                    this.members = await response.json();
+                    this.renderMembers();
+                } catch (error) {
+                    console.error('Error loading members:', error);
+                }
+            }
+
+            async deleteMember(memberId) {
+                try {
+                    const response = await fetch(`/api/members/${memberId}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to delete member');
+                    }
+
+                    this.members = this.members.filter(member => member._id !== memberId);
+                    this.renderMembers();
+                    alert('Member deleted successfully');
+                } catch (error) {
+                    console.error('Error deleting member:', error);
+                }
+            }
+
+            searchMembers() {
+                const searchInput = document.getElementById('searchInput').value.toLowerCase();
+                const filteredMembers = this.members.filter(member => 
+                    member.username.toLowerCase().includes(searchInput) ||
+                    member.email.toLowerCase().includes(searchInput) ||
+                    member.phone.toLowerCase().includes(searchInput)
+                );
+                this.renderMembers(filteredMembers);
+            }
+
+            renderMembers(filteredMembers = this.members) {
+                const tableBody = document.getElementById('memberList');
+                tableBody.innerHTML = '';
+
+                filteredMembers.forEach(member => {
+                    const row = `
+                        <tr>
+                            <td>${member.username}</td>
+                            <td>${member.email}</td>
+                            <td>${member.phone}</td>
+                            <td>${member.role}</td>
+                            <td>
+                                <button class="btn btn-delete" onclick="memberManager.deleteMember('${member._id}')">Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                    tableBody.insertAdjacentHTML('beforeend', row);
+                });
+            }
+        }
+
+        const memberManager = new MemberManager();
+
+        function logout() {
+            localStorage.removeItem('username');
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DLMS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/bookmanagement.css">
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-title">eShelf</div>
+        <nav class="sidebar-nav">
+            <a href="dashboard.html"><span class="icon">📊</span> Dashboard</a>
+            <a href="bookmanagement.html" class="active"><span class="icon">📚</span> Book Management</a>
+            <a href="Issue.html"><span class="icon">📝</span> Issue&Return Management</a>
+            <a href="membermanagement.html"><span class="icon">👥</span> Member Management</a>
+            <a href="fines.html"><span class="icon">💰</span> Fines</a>
+        </nav>
+        <div class="logout-container">
+            <button class="profile-btn" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </div>
+
+  <div class="main-content">
+    <h1>Book Management System</h1>
+
+    <!-- Search Bar -->
+    <div class="form-container">
+        <input type="text" id="searchInput" placeholder="Search books by title, author, or ISBN" oninput="bookManager.searchBooks()">
+    </div>
+
+    <!-- Book Management Form -->
+    <form id="book-management-form" class="form-container" action="/add-book" method="POST">
+        <input type="text" id="bookIdInput" placeholder="Book ID" required>  <!-- User enters Book ID -->
+        <input type="text" id="titleInput" placeholder="Title" required>
+        <input type="text" id="authorInput" placeholder="Author" required>
+        <input type="text" id="isbnInput" placeholder="ISBN" required>
+        <input type="number" id="quantityInput" placeholder="Quantity" required>
+        <button type="submit" class="btn btn-add">Add Book</button>
+    </form>
+    
+    
+
+    <!-- Book Table -->
+    <table id="bookTable">
+        <thead>
+            <tr>
+                <th>Book ID</th>
+                <th>Title</th>
+                <th>Author</th>
+                <th>ISBN</th>
+                <th>Quantity</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="bookList"></tbody>
+    </table>
+
+    <!-- Edit Modal -->
+    <div id="editModal">
+        <div class="modal-content">
+            <h2>Edit Book Details</h2>
+            <input type="text" id="editBookIDInput" placeholder="Book ID" >
+            <input type="text" id="editTitleInput" placeholder="Title">
+            <input type="text" id="editAuthorInput" placeholder="Author">
+            <input type="text" id="editIsbnInput" placeholder="ISBN">
+            <input type="number" id="editQuantityInput" placeholder="Quantity">
+            <button class="btn btn-update" onclick="bookManager.saveBookUpdate()">Save Changes</button>
+            <button class="btn" onclick="bookManager.closeEditModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript: BookManager Class -->
+<script>
+    class BookManager {
+        constructor() {
+            this.books = [];
+            this.loadBooks();
+        }
+
+        async loadBooks() {
+            try {
+                const response = await fetch('/api/books');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch books');
+                }
+                this.books = await response.json();
+                this.renderBooks();
+            } catch (error) {
+                console.error('Error loading books:', error);
+            }
+        }
+
+        generateBookId() {
+            return 'BID-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        }
+
+        async addBook() {
+            const bookData = {
+                bookId: document.getElementById('bookIdInput').value || this.generateBookId(), // Generate Book ID if not provided
+                title: document.getElementById('titleInput').value,
+                author: document.getElementById('authorInput').value,
+                isbn: document.getElementById('isbnInput').value,
+                quantity: document.getElementById('quantityInput').value
+            };
+
+            try {
+                const response = await fetch('/api/books', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(bookData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to add book');
+                }
+
+                const newBook = await response.json();
+                this.books.push(newBook);
+                this.renderBooks();
+                this.clearForm();
+                alert('Book added successfully');
+            } catch (error) {
+                console.error('Error adding book:', error);
+            }
+        }
+
+        async deleteBook(bookId) {
+            try {
+                const response = await fetch(`/api/books/${bookId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to delete book');
+                }
+
+                this.books = this.books.filter(book => book.bookId !== bookId);
+                this.renderBooks();
+                alert('Book deleted successfully');
+            } catch (error) {
+                console.error('Error deleting book:', error);
+            }
+        }
+
+        editBook(bookId) {
+            const book = this.books.find(book => book.bookId === bookId);
+            if (book) {
+                document.getElementById('editBookIDInput').value = book.bookId;
+                document.getElementById('editTitleInput').value = book.title;
+                document.getElementById('editAuthorInput').value = book.author;
+                document.getElementById('editIsbnInput').value = book.isbn;
+                document.getElementById('editQuantityInput').value = book.quantity;
+                document.getElementById('editModal').style.display = 'block';
+            }
+        }
+
+        async saveBookUpdate() {
+            const bookId = document.getElementById('editBookIDInput').value;
+            const bookData = {
+                title: document.getElementById('editTitleInput').value,
+                author: document.getElementById('editAuthorInput').value,
+                isbn: document.getElementById('editIsbnInput').value,
+                quantity: document.getElementById('editQuantityInput').value
+            };
+
+            try {
+                const response = await fetch(`/api/books/${bookId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(bookData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update book');
+                }
+
+                const updatedBook = await response.json();
+                const index = this.books.findIndex(book => book.bookId === bookId);
+                this.books[index] = updatedBook;
+                this.renderBooks();
+                this.closeEditModal();
+                alert('Book updated successfully');
+            } catch (error) {
+                console.error('Error updating book:', error);
+            }
+        }
+
+        closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        searchBooks() {
+            const searchInput = document.getElementById('searchInput').value.toLowerCase();
+            const filteredBooks = this.books.filter(book => 
+                book.title.toLowerCase().includes(searchInput) ||
+                book.author.toLowerCase().includes(searchInput) ||
+                book.isbn.toLowerCase().includes(searchInput)
+            );
+            this.renderBooks(filteredBooks);
+        }
+
+        renderBooks(filteredBooks = this.books) {
+            const tableBody = document.getElementById('bookList');
+            tableBody.innerHTML = '';
+
+            filteredBooks.forEach(book => {
+                const row = `
+                    <tr>
+                        <td>${book.bookId}</td> <!-- Ensure bookId is correctly referenced -->
+                        <td>${book.title}</td>
+                        <td>${book.author}</td>
+                        <td>${book.isbn}</td>
+                        <td>${book.quantity}</td>
+                        <td>${book.status}</td>
+                        <td>
+                            <button class="btn btn-update" onclick="bookManager.editBook('${book.bookId}')">Edit</button>
+                            <button class="btn btn-delete" onclick="bookManager.deleteBook('${book.bookId}')">Delete</button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.insertAdjacentHTML('beforeend', row);
+            });
+        }
+
+        clearForm() {
+            document.getElementById('bookIdInput').value = '';
+            document.getElementById('titleInput').value = '';
+            document.getElementById('authorInput').value = '';
+            document.getElementById('isbnInput').value = '';
+            document.getElementById('quantityInput').value = '';
+        }
+    }
+
+    const bookManager = new BookManager();
+
+    document.getElementById('book-management-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        bookManager.addBook();
+    });
+
+    function logout() {
+        localStorage.removeItem('username');
+        window.location.href = 'login.html';
+    }
+</script>
+ 
+</body>
+</html>

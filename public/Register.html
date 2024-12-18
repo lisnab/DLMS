@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>eShelf</title>
+  <link rel="stylesheet" href="styles/Register.css" />
+  <!-- Font Awesome CDN link for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
+</head>
+<body>
+  <div class="wrapper">
+    <div class="title"><span>Registration Form</span></div>
+    <form id="register-form" action="/register" method="POST">
+      <div class="row">
+        <i class="fas fa-user"></i>
+        <input type="text" name="username" placeholder="Username" required />
+      </div>
+      <div class="row">
+        <i class="fas fa-envelope"></i>
+        <input type="email" name="email" placeholder="Email" required />
+      </div>
+      <div class="row">
+        <i class="fas fa-phone"></i>
+        <input type="text" name="phone" placeholder="Phone" required />
+      </div>
+      <div class="row">
+        <i class="fas fa-lock"></i>
+        <input type="password" name="password" placeholder="Password" required />
+      </div>
+      <div class="row">
+        <i class="fas fa-lock"></i>
+        <input type="password" name="confirmPassword" placeholder="Confirm Password" required />
+      </div>
+      <div class="row button">
+        <input type="submit" value="Register" />
+      </div>
+      <div id="error-message" style="color: red;"></div>
+      <div class="signup-link">Already a member? <a href="Login.html">Login now</a></div>
+    </form>
+  </div>
+  <script src="Register.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('register-form');
+      const errorMessage = document.getElementById('error-message');
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const formData = new FormData(form);
+        const data = {};
+        formData.forEach((value, key) => {
+          data[key] = value;
+        });
+        console.log('Form data:', data); // Log form data for debugging
+        try {
+          const response = await fetch('/register', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+          });
+          if (response.ok) {
+            window.location.href = 'login.html'; // Redirect to login page after successful registration
+          } else {
+            const errorText = await response.text();
+            errorMessage.textContent = `Error: ${errorText}`;
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          errorMessage.textContent = 'Failed to fetch';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

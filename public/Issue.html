@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Book Issue Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/issue.css">
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-title">eShelf</div>
+        <nav class="sidebar-nav">
+            <a href="dashboard.html"><span class="icon">📊</span> Dashboard</a>
+            <a href="bookmanagement.html"><span class="icon">📚</span> Book Management</a>
+            <a href="Issue.html" class="active"><span class="icon">📝</span> Issue&Return Management</a>
+            <a href="membermanagement.html"><span class="icon">👥</span> Member Management</a>
+            <a href="fines.html"><span class="icon">💰</span> Fines</a>
+        </nav>
+        <div class="logout-container">
+            <button class="profile-btn" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </div>
+
+  <div class="main-content">
+    <h1 class="dashboard-title">Issue Book Form</h1>
+    <form id="issue-book-form" class="form-container" action="/issue-book" method="POST">
+        <div class="form-group">
+            <label for="book-id">Book ID Number</label>
+            <input type="text" id="book-id" name="bookId" required>
+        </div>
+        <div class="form-group">
+            <label for="book-name">Name of Book</label>
+            <input type="text" id="book-name" name="bookName" required>
+        </div>
+        <div class="form-group">
+            <label for="student-id">Student ID Number</label>
+            <input type="text" id="student-id" name="studentId" required>
+        </div>
+        <div class="form-group">
+            <label for="student-name">Student Name</label>
+            <input type="text" id="student-name" name="studentName" required>
+        </div>
+        <div class="form-group">
+            <label for="section">Course & Section</label>
+            <select id="section" name="section" required>
+                <option value="">Select Section</option>
+                <option value="BSCS-3A">BSCS-3A</option>
+                <option value="BSCS-3B">BSCS-3B</option>
+                <option value="BSCS-3C">BSCS-3C</option>
+                <option value="BSCS-3D">BSCS-3D</option>
+            </select>
+        </div>
+        <div class="form-group-inline">
+            <div class="form-group">
+                <label for="issue-date">Issue Date</label>
+                <input type="date" id="issue-date" name="issueDate" required>
+            </div>
+            <div class="form-group">
+                <label for="due-date">Due Date</label>
+                <input type="date" id="due-date" name="dueDate" required>
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-add">Issue Book</button>
+            </div>
+        </div>
+    </form>
+
+    <h2>Issued Books</h2>
+    <table id="issued-books-table">
+        <thead>
+            <tr>
+                <th>Book ID</th>
+                <th>Book Name</th>
+                <th>Student ID</th>
+                <th>Student Name</th>
+                <th>Course & Section</th>
+                <th>Issue Date</th>
+                <th>Due Date</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="issued-books-body">
+            <!-- Issued books will be dynamically added here -->
+        </tbody>
+    </table>
+
+    <h2>Returned Books</h2>
+    <table id="returned-books-table">
+        <thead>
+            <tr>
+                <th>Book ID</th>
+                <th>Book Name</th>
+                <th>Student ID</th>
+                <th>Student Name</th>
+                <th>Course & Section</th>
+                <th>Issue Date</th>
+                <th>Due Date</th>
+                <th>Return Date</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="returned-books-body">
+            <!-- Returned books will be dynamically added here -->
+        </tbody>
+    </table>
+  </div>
+
+  <script>
+    function logout() {
+        localStorage.removeItem('username');
+        window.location.href = 'login.html';
+    }
+
+    class BookIssueManager {
+        constructor() {
+            this.issuedBooks = [];
+            this.returnedBooks = [];
+            this.books = [];
+            this.loadBooks();
+            this.loadIssuedBooks();
+            this.loadReturnedBooks();
+
+            document.getElementById('issue-book-form').addEventListener('submit', this.handleFormSubmit.bind(this));
+        }
+
+        async loadBooks() {
+            try {
+                const response = await fetch('/api/books');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch books');
+                }
+                this.books = await response.json();
+                this.populateBookFields();
+            } catch (error) {
+                console.error('Error loading books:', error);
+            }
+        }
+
+        populateBookFields() {
+            const bookIdField = document.getElementById('book-id');
+            const bookNameField = document.getElementById('book-name');
+
+            this.books.forEach(book => {
+                const option = document.createElement('option');
+                option.value = book.bookId;
+                option.textContent = `${book.bookId} - ${book.title}`;
+                bookIdField.appendChild(option);
+            });
+
+            bookIdField.addEventListener('change', () => {
+                const selectedBook = this.books.find(book => book.bookId === bookIdField.value);
+                if (selectedBook) {
+                    bookNameField.value = selectedBook.title;
+                }
+            });
+        }
+
+        async loadIssuedBooks() {
+            try {
+                const response = await fetch('/api/issued-books');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch issued books');
+                }
+                this.issuedBooks = await response.json();
+                this.renderIssuedBooks();
+            } catch (error) {
+                console.error('Error loading issued books:', error);
+            }
+        }
+
+        async loadReturnedBooks() {
+            try {
+                const response = await fetch('/api/returned-books');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch returned books');
+                }
+                this.returnedBooks = await response.json();
+                this.renderReturnedBooks();
+            } catch (error) {
+                console.error('Error loading returned books:', error);
+            }
+        }
+
+        async handleFormSubmit(e) {
+            e.preventDefault();
+            const bookData = {
+                bookId: document.getElementById('book-id').value,
+                bookName: document.getElementById('book-name').value,
+                studentId: document.getElementById('student-id').value,
+                studentName: document.getElementById('student-name').value,
+                section: document.getElementById('section').value,
+                issueDate: document.getElementById('issue-date').value,
+                dueDate: document.getElementById('due-date').value
+            };
+
+            try {
+                const response = await fetch('/issue-book', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(bookData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: 'Failed to issue book' }));
+                    throw new Error(errorData.message || 'Failed to issue book');
+                }
+
+                const issuedBook = await response.json();
+                this.issuedBooks.push(issuedBook);
+                this.updateBookQuantity(bookData.bookId, -1);
+                this.renderIssuedBooks();
+                e.target.reset();
+                alert('Book issued successfully!');
+            } catch (error) {
+                console.error('Error issuing book:', error);
+                alert(error.message);
+            }
+        }
+
+        async updateBookQuantity(bookId, change) {
+            const book = this.books.find(book => book.bookId === bookId);
+            if (book) {
+                book.quantity += change;
+                try {
+                    const response = await fetch(`/api/books/${bookId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ quantity: book.quantity })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to update book quantity');
+                    }
+
+                    const updatedBook = await response.json();
+                    const index = this.books.findIndex(book => book.bookId === bookId);
+                    this.books[index] = updatedBook;
+                } catch (error) {
+                    console.error('Error updating book quantity:', error);
+                }
+            }
+        }
+
+        renderIssuedBooks() {
+            const tableBody = document.getElementById('issued-books-body');
+            tableBody.innerHTML = '';
+
+            this.issuedBooks.forEach((book, index) => {
+                const currentDate = new Date();
+                const dueDate = new Date(book.dueDate);
+                const isOverdue = currentDate > dueDate;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${book.bookId}</td>
+                    <td>${book.bookName}</td>
+                    <td>${book.studentId}</td>
+                    <td>${book.studentName}</td>
+                    <td>${book.section}</td>
+                    <td>${book.issueDate}</td>
+                    <td>${book.dueDate}</td>
+                    <td class="${isOverdue ? 'overdue' : ''}">
+                        ${isOverdue ? 'Overdue' : 'Active'}
+                    </td>
+                    <td>
+                        <button class="btn btn-return" onclick="bookIssueManager.returnBook('${book.bookId}', ${index})">Return</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        async returnBook(bookId, index) {
+            const returnedBook = this.issuedBooks[index];
+            returnedBook.returnDate = new Date().toISOString().split('T')[0];
+
+            try {
+                const response = await fetch(`/return-book/${bookId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(returnedBook)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to return book');
+                }
+
+                this.returnedBooks.push(returnedBook);
+                this.issuedBooks.splice(index, 1);
+                this.updateBookQuantity(bookId, 1);
+                this.renderIssuedBooks();
+                this.renderReturnedBooks();
+                alert('Book returned successfully!');
+            } catch (error) {
+                console.error('Error returning book:', error);
+            }
+        }
+
+        renderReturnedBooks() {
+            const tableBody = document.getElementById('returned-books-body');
+            tableBody.innerHTML = '';
+
+            this.returnedBooks.forEach((book, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${book.bookId}</td>
+                    <td>${book.bookName}</td>
+                    <td>${book.studentId}</td>
+                    <td>${book.studentName}</td>
+                    <td>${book.section}</td>
+                    <td>${book.issueDate}</td>
+                    <td>${book.dueDate}</td>
+                    <td>${book.returnDate}</td>
+                    <td>
+                        <button class="btn btn-delete" onclick="bookIssueManager.deleteReturnedBook(${index})">Delete</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        async deleteReturnedBook(index) {
+            const bookId = this.returnedBooks[index].bookId;
+
+            try {
+                const response = await fetch(`/api/returned-books/${bookId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to delete returned book');
+                }
+
+                this.returnedBooks.splice(index, 1);
+                this.renderReturnedBooks();
+                alert('Returned book deleted successfully!');
+            } catch (error) {
+                console.error('Error deleting returned book:', error);
+            }
+        }
+    }
+
+    const bookIssueManager = new BookIssueManager();
+</script>
+  
+</body>
+</html>
