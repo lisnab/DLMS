@@ -6,25 +6,85 @@
     <title>Library Book Issue Management</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles/issue.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        .profile-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .profile-btn {
+            background: none;
+            border: none;
+            color: gray;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+        }
+        .profile-btn i {
+            margin-left: 5px;
+        }
+        .profile-dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+        .profile-dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+        .profile-dropdown-content a:hover {
+            background-color: #f1f1f1;
+        }
+        .profile-dropdown:hover .profile-dropdown-content {
+            display: block;
+        }
+        .sidebar-nav {
+            margin-top: 0;
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+        }
+    </style>
 </head>
 <body>
     <div class="sidebar">
-        <div class="sidebar-title">eShelf</div>
+        <div class="sidebar-title-container">
+            <div class="sidebar-title">SKSU Library</div>
+        </div>
         <nav class="sidebar-nav">
             <a href="dashboard.html"><span class="icon">📊</span> Dashboard</a>
             <a href="bookmanagement.html"><span class="icon">📚</span> Book Management</a>
             <a href="Issue.html" class="active"><span class="icon">📝</span> Issue&Return Management</a>
             <a href="membermanagement.html"><span class="icon">👥</span> Member Management</a>
             <a href="fines.html"><span class="icon">💰</span> Fines</a>
+            <a href="report.html"><span class="icon">📄</span> Report</a>
         </nav>
         <div class="logout-container">
-            <button class="profile-btn" onclick="logout()">
+            <!-- Remove logout button -->
+            <!-- <button class="profile-btn" onclick="logout()">
                 <i class="fas fa-sign-out-alt"></i> Logout
-            </button>
+            </button> -->
         </div>
     </div>
 
   <div class="main-content">
+    <div class="header-right" style="float: right; margin: 20px;">
+        <div class="profile-dropdown">
+            <button class="profile-btn" id="profile-name">Profile <i class="fas fa-chevron-down"></i></button>
+            <div class="profile-dropdown-content">
+                <a href="update_profile.html">Update Profile</a>
+                <a href="#" onclick="logout()">Logout</a>
+            </div>
+        </div>
+    </div>
     <h1 class="dashboard-title">Issue Book Form</h1>
     <form id="issue-book-form" class="form-container" action="/issue-book" method="POST">
         <div class="form-group">
@@ -36,12 +96,12 @@
             <input type="text" id="book-name" name="bookName" required>
         </div>
         <div class="form-group">
-            <label for="student-id">Student ID Number</label>
-            <input type="text" id="student-id" name="studentId" required>
+            <label for="student-id">Student ID</label>
+            <input type="text" id="student-id" name="studentId" required oninput="bookIssueManager.fillStudentName()">
         </div>
         <div class="form-group">
             <label for="student-name">Student Name</label>
-            <input type="text" id="student-name" name="studentName" required>
+            <input type="text" id="student-name" name="studentName" readonly required>
         </div>
         <div class="form-group">
             <label for="section">Course & Section</label>
@@ -66,6 +126,7 @@
                 <button type="submit" class="btn btn-add">Issue Book</button>
             </div>
         </div>
+        <div id="error-message" style="color: red;"></div>
     </form>
 
     <h2>Issued Books</h2>
@@ -85,26 +146,6 @@
         </thead>
         <tbody id="issued-books-body">
             <!-- Issued books will be dynamically added here -->
-        </tbody>
-    </table>
-
-    <h2>Returned Books</h2>
-    <table id="returned-books-table">
-        <thead>
-            <tr>
-                <th>Book ID</th>
-                <th>Book Name</th>
-                <th>Student ID</th>
-                <th>Student Name</th>
-                <th>Course & Section</th>
-                <th>Issue Date</th>
-                <th>Due Date</th>
-                <th>Return Date</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody id="returned-books-body">
-            <!-- Returned books will be dynamically added here -->
         </tbody>
     </table>
   </div>
@@ -249,6 +290,25 @@
             }
         }
 
+        async fillStudentName() {
+            const studentId = document.getElementById('student-id').value;
+            const studentNameField = document.getElementById('student-name');
+            const errorMessage = document.getElementById('error-message');
+
+            try {
+                const response = await fetch(`/api/members/${studentId}`);
+                if (!response.ok) {
+                    throw new Error('Student ID not found');
+                }
+                const student = await response.json();
+                studentNameField.value = student.fullname;
+                errorMessage.textContent = '';
+            } catch (error) {
+                studentNameField.value = 'Error';
+                errorMessage.textContent = 'Error: Student ID not found';
+            }
+        }
+
         renderIssuedBooks() {
             const tableBody = document.getElementById('issued-books-body');
             tableBody.innerHTML = '';
@@ -281,6 +341,14 @@
         async returnBook(bookId, index) {
             const returnedBook = this.issuedBooks[index];
             returnedBook.returnDate = new Date().toISOString().split('T')[0];
+            const dueDate = new Date(returnedBook.dueDate);
+            const currentDate = new Date();
+            if (currentDate > dueDate) {
+                returnedBook.wasOverdue = true;
+                const daysOverdue = Math.floor((currentDate - dueDate) / (1000 * 60 * 60 * 24));
+                const fineAmount = daysOverdue * 25; // Assuming a fine of 25 PHP per day
+                await addFineToAmountCollected(fineAmount);
+            }
 
             try {
                 const response = await fetch(`/return-book/${bookId}`, {
@@ -297,58 +365,43 @@
 
                 this.returnedBooks.push(returnedBook);
                 this.issuedBooks.splice(index, 1);
-                this.updateBookQuantity(bookId, 1);
                 this.renderIssuedBooks();
-                this.renderReturnedBooks();
                 alert('Book returned successfully!');
             } catch (error) {
                 console.error('Error returning book:', error);
             }
         }
+    }
 
-        renderReturnedBooks() {
-            const tableBody = document.getElementById('returned-books-body');
-            tableBody.innerHTML = '';
-
-            this.returnedBooks.forEach((book, index) => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${book.bookId}</td>
-                    <td>${book.bookName}</td>
-                    <td>${book.studentId}</td>
-                    <td>${book.studentName}</td>
-                    <td>${book.section}</td>
-                    <td>${book.issueDate}</td>
-                    <td>${book.dueDate}</td>
-                    <td>${book.returnDate}</td>
-                    <td>
-                        <button class="btn btn-delete" onclick="bookIssueManager.deleteReturnedBook(${index})">Delete</button>
-                    </td>
-                `;
-                tableBody.appendChild(row);
+    async function addFineToAmountCollected(fineAmount) {
+        try {
+            const response = await fetch('/api/add-fine', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ fineAmount })
             });
-        }
 
-        async deleteReturnedBook(index) {
-            const bookId = this.returnedBooks[index].bookId;
-
-            try {
-                const response = await fetch(`/api/returned-books/${bookId}`, {
-                    method: 'DELETE'
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to delete returned book');
-                }
-
-                this.returnedBooks.splice(index, 1);
-                this.renderReturnedBooks();
-                alert('Returned book deleted successfully!');
-            } catch (error) {
-                console.error('Error deleting returned book:', error);
+            if (!response.ok) {
+                throw new Error('Failed to add fine to amount collected');
             }
+
+            const result = await response.json();
+            document.getElementById('amount-collected').textContent = `₱${result.amountCollected.toFixed(2)}`;
+        } catch (error) {
+            console.error('Error adding fine to amount collected:', error);
         }
     }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        const username = localStorage.getItem('username');
+        if (username) {
+            const response = await fetch(`/api/members/${username}`);
+            const user = await response.json();
+            document.getElementById('profile-name').innerHTML = `${user.fullname} <i class="fas fa-chevron-down"></i>`;
+        }
+    });
 
     const bookIssueManager = new BookIssueManager();
 </script>

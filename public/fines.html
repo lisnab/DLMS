@@ -6,25 +6,92 @@
     <title>Fines</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles/fines.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        .profile-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .profile-btn {
+            background: none;
+            border: none;
+            color: gray;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+        }
+        .profile-btn i {
+            margin-left: 5px;
+        }
+        .profile-dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+        .profile-dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+        .profile-dropdown-content a:hover {
+            background-color: #f1f1f1;
+        }
+        .profile-dropdown:hover .profile-dropdown-content {
+            display: block;
+        }
+        .sidebar-nav {
+            margin-top: 0;
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+        }
+        .logout-container {
+            padding: 2px 6px;
+            text-align: center;
+            margin-top: auto;
+            margin-left: 30px;
+            color: #0fb44b; /* Change text color to green */
+        }
+    </style>
 </head>
 <body>
     <div class="sidebar">
-        <div class="sidebar-title">eShelf</div>
+        <div class="sidebar-title-container">
+            <div class="sidebar-title">SKSU Library</div>
+        </div>
         <nav class="sidebar-nav">
             <a href="dashboard.html"><span class="icon">📊</span> Dashboard</a>
             <a href="bookmanagement.html"><span class="icon">📚</span> Book Management</a>
             <a href="Issue.html"><span class="icon">📝</span> Issue&Return Management</a>
             <a href="membermanagement.html"><span class="icon">👥</span> Member Management</a>
             <a href="fines.html" class="active"><span class="icon">💰</span> Fines</a>
+            <a href="report.html"><span class="icon">📄</span> Report</a>
         </nav>
         <div class="logout-container">
-            <button class="profile-btn" onclick="logout()">
+            <!-- Remove logout button -->
+            <!-- <button class="profile-btn" onclick="logout()">
                 <i class="fas fa-sign-out-alt"></i> Logout
-            </button>
+            </button> -->
         </div>
     </div>
 
     <div class="main-content">
+        <div class="header-right" style="float: right; margin: 20px;">
+            <div class="profile-dropdown">
+                <button class="profile-btn" id="profile-name">Profile <i class="fas fa-chevron-down"></i></button>
+                <div class="profile-dropdown-content">
+                    <a href="update_profile.html">Update Profile</a>
+                    <a href="#" onclick="logout()">Logout</a>
+                </div>
+            </div>
+        </div>
         <h1>Overdue Books and Fines</h1>
         <div class="form-container">
             <input type="text" id="searchInput" placeholder="Search by Student ID" oninput="searchFines()">
@@ -39,6 +106,7 @@
                     <th>Due Date</th>
                     <th>Days Overdue</th>
                     <th>Fine Amount (PHP)</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody id="finesList"></tbody>
@@ -47,6 +115,12 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
+            const username = localStorage.getItem('username');
+            if (username) {
+                const response = await fetch(`/api/members/${username}`);
+                const user = await response.json();
+                document.getElementById('profile-name').innerHTML = `${user.fullname} <i class="fas fa-chevron-down"></i>`;
+            }
             await loadFines();
         });
 
@@ -89,10 +163,32 @@
                         <td>${book.dueDate}</td>
                         <td>${daysOverdue}</td>
                         <td>₱${fineAmount.toFixed(2)}</td>
+                        <td>
+                            <button class="btn btn-delete" onclick="deleteFine('${book.bookId}')">Delete</button>
+                        </td>
                     </tr>
                 `;
                 finesList.insertAdjacentHTML('beforeend', row);
             });
+        }
+
+        async function deleteFine(bookId) {
+            try {
+                const response = await fetch(`/api/issued-books/${bookId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to delete fine');
+                }
+
+                overdueBooks = overdueBooks.filter(book => book.bookId !== bookId);
+                renderFines(overdueBooks);
+                alert('Fine deleted successfully');
+            } catch (error) {
+                console.error('Error deleting fine:', error);
+                alert('Error deleting fine');
+            }
         }
 
         function searchFines() {

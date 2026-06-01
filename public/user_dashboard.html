@@ -4,13 +4,95 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Library User Dashboard</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles/user_dashboard.css">
+    <style>
+        .profile-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .profile-btn {
+            background: none;
+            border: none;
+            color: gray;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+        }
+        .profile-btn i {
+            margin-left: 5px;
+        }
+        .profile-dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+        .profile-dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+        .profile-dropdown-content a:hover {
+            background-color: #f1f1f1;
+        }
+        .profile-dropdown:hover .profile-dropdown-content {
+            display: block;
+        }
+        .notification-icon {
+            display: none; /* Hide notification icon */
+        }
+        .notification-dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: #f9f9f9;
+            min-width: 300px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .notification-dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+        .notification-dropdown-content a:hover {
+            background-color: #f1f1f1;
+        }
+        .notification-icon:hover .notification-dropdown-content {
+            display: block;
+        }
+        .welcome-message {
+            color: black;
+            padding: 20px;
+            text-align: start;
+            margin-bottom: 20px;
+        }
+        .welcome-message h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        .welcome-message p {
+            margin: 10px 0 0;
+            font-size: 18px;
+        }
+        .sidebar-nav {
+            margin-top: 0;
+        }
+    </style>
 </head>
 <body>
     <div class="sidebar">
-        <div class="sidebar-title">eShelf</div>
+        <div class="sidebar-title">SKSU Library</div>
         <nav class="sidebar-nav">
             <a href="user_dashboard.html" class="sidebar-menu-item active">
                 <i class="fas fa-book"></i> Dashboard
@@ -19,14 +101,30 @@
                 <i class="fas fa-book-open"></i>  Borrowed Books
             </a>
         </nav>
-        <div class="logout-container">
-            <button class="profile-btn" onclick="logout()">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </button>
-        </div>
     </div>
 
     <div class="main-content">
+        <div class="header-right" style="float: right; margin: 20px;">
+            <!-- Remove notification icon -->
+            <!-- <div class="notification-icon" id="notification-icon">
+                <i style="font-size:24px" class="fa">&#xf0f3;</i>
+                <span class="badge" id="notification-count">0</span>
+                <div class="notification-dropdown-content" id="notification-dropdown-content">
+                    <!-- Notifications will be dynamically added here -->
+                <!-- </div>
+            </div> -->
+            <div class="profile-dropdown">
+                <button class="profile-btn" id="profile-name">Profile <i class="fas fa-chevron-down"></i></button>
+                <div class="profile-dropdown-content">
+                    <a href="update_profile.html">Update Profile</a>
+                    <a href="#" onclick="logout()">Logout</a>
+                </div>
+            </div>
+        </div>
+        <div id="welcome-message" class="welcome-message">
+            <h1>Welcome! <span id="user-role"></span></h1>
+            <p id="welcome-text"></p>
+        </div>
         <h1 class="dashboard-title">Available Books</h1>
         <div class="header">
             <div class="search-bar">
@@ -42,6 +140,17 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
+            const username = localStorage.getItem('username');
+            if (username) {
+                const response = await fetch(`/api/members/${username}`);
+                const user = await response.json();
+                document.getElementById('profile-name').innerHTML = `${user.fullname} <i class="fas fa-chevron-down"></i>`;
+                const welcomeText = user.role === 'librarian' ? 
+                    'Manage your library efficiently and effectively.' : 
+                    'Explore and manage your borrowed books with ease.';
+                document.getElementById('welcome-text').textContent = welcomeText;
+                document.getElementById('user-role').textContent = `${user.role.charAt(0).toUpperCase() + user.role.slice(1)}`;
+            }
             await loadBooks();
         });
 

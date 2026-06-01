@@ -85,3 +85,6 @@ body {
 .icon-glow:hover {
     text-shadow: 0 0 10px rgba(255,255,255,0.5);
 }
+
+/* Ensure sidebar text is black on all pages */
+.sidebar, .sidebar .sidebar-title, .sidebar-nav a, .sidebar-logo { color: #000 !important; }

@@ -123,3 +123,6 @@ form .button input:hover {
 form .signup-link a:hover {
   text-decoration: underline;
 }
+
+/* Ensure sidebar text is black on all pages */
+.sidebar, .sidebar .sidebar-title, .sidebar-nav a, .sidebar-logo { color: #000 !important; }

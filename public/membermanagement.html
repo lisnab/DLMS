@@ -6,25 +6,77 @@
     <title>Member Management</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles/membermanagement.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        .profile-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .profile-btn {
+            background: none;
+            border: none;
+            color: gray;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+        }
+        .profile-btn i {
+            margin-left: 5px;
+        }
+        .profile-dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+        .profile-dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+        .profile-dropdown-content a:hover {
+            background-color: #f1f1f1;
+        }
+        .profile-dropdown:hover .profile-dropdown-content {
+            display: block;
+        }
+        .sidebar-nav {
+            margin-top: 0;
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+        }
+    </style>
 </head>
 <body>
     <div class="sidebar">
-        <div class="sidebar-title">eShelf</div>
+        <div class="sidebar-title">SKSU Library</div>
         <nav class="sidebar-nav">
             <a href="dashboard.html"><span class="icon">📊</span> Dashboard</a>
             <a href="bookmanagement.html"><span class="icon">📚</span> Book Management</a>
             <a href="Issue.html"><span class="icon">📝</span> Issue&Return Management</a>
             <a href="membermanagement.html" class="active"><span class="icon">👥</span> Member Management</a>
             <a href="fines.html"><span class="icon">💰</span> Fines</a>
+            <a href="report.html"><span class="icon">📄</span> Report</a>
         </nav>
-        <div class="logout-container">
-            <button class="profile-btn">
-                <a href="login.html">Logout</a>
-            </button>
-        </div>
     </div>
 
     <div class="main-content">
+        <div class="header-right" style="float: right; margin: 20px;">
+            <div class="profile-dropdown">
+                <button class="profile-btn" id="profile-name">Profile <i class="fas fa-chevron-down"></i></button>
+                <div class="profile-dropdown-content">
+                    <a href="update_profile.html">Update Profile</a>
+                    <a href="#" onclick="logout()">Logout</a>
+                </div>
+            </div>
+        </div>
         <h1>Member Management</h1>
 
         <!-- Search Bar -->
@@ -37,6 +89,7 @@
             <thead>
                 <tr>
                     <th>Username</th>
+                    <th>Full Name</th>
                     <th>Email</th>
                     <th>Phone</th>
                     <th>Role</th>
@@ -89,6 +142,7 @@
                 const searchInput = document.getElementById('searchInput').value.toLowerCase();
                 const filteredMembers = this.members.filter(member => 
                     member.username.toLowerCase().includes(searchInput) ||
+                    member.fullname.toLowerCase().includes(searchInput) ||
                     member.email.toLowerCase().includes(searchInput) ||
                     member.phone.toLowerCase().includes(searchInput)
                 );
@@ -103,6 +157,7 @@
                     const row = `
                         <tr>
                             <td>${member.username}</td>
+                            <td>${member.fullname}</td>
                             <td>${member.email}</td>
                             <td>${member.phone}</td>
                             <td>${member.role}</td>
@@ -117,6 +172,15 @@
         }
 
         const memberManager = new MemberManager();
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const username = localStorage.getItem('username');
+            if (username) {
+                const response = await fetch(`/api/members/${username}`);
+                const user = await response.json();
+                document.getElementById('profile-name').innerHTML = `${user.fullname} <i class="fas fa-chevron-down"></i>`;
+            }
+        });
 
         function logout() {
             localStorage.removeItem('username');

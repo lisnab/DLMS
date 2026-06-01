@@ -9,11 +9,86 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles/dashboard.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .profile-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .profile-btn {
+            background: none;
+            border: none;
+            color: gray;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+        }
+        .profile-btn i {
+            margin-left: 5px;
+        }
+        .profile-dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+        .profile-dropdown-content a {
+            color: black;
+            padding: 12px 10px;
+            text-decoration: none;
+            display: block;
+        }
+        .profile-dropdown-content a:hover {
+            background-color: #f1f1f1;
+        }
+        .profile-dropdown:hover .profile-dropdown-content {
+            display: block;
+        }
+        .welcome-message { /* Green background color */
+            color: black;
+            padding: 20px;
+            text-align: start;
+            margin-bottom: 20px;
+            border-radius: 10px;
+        }
+        .welcome-message h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        .welcome-message p {
+            margin: 10px 0 0;
+            font-size: 18px;
+        }
+        /* Dashboard card styles moved to styles/dashboard.css */
+        .sidebar-nav {
+            margin-top: 0;
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+        }
+        /* Stats table improvements */
+        .stats-table th { font-weight: 700; padding: 12px 16px; }
+        .stats-table td { padding: 12px 16px; border-top: 1px solid #eef2f7; }
+        .stats-table .value { text-align: right; font-weight: 600; }
+        .toggle-btn { background:#2563eb; color:#fff; border-radius:6px; padding:6px 10px; border:none; cursor:pointer; font-weight:600 }
+        .details-row { display:none; background:#fafbfd }
+        .details-content { padding:12px 16px; color:#334155 }
+        .charts-grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(300px,1fr)); gap:20px; margin-bottom:20px; }
+        .chart-card { background:#fff; padding:14px; border-radius:10px; box-shadow:0 6px 20px rgba(16,24,40,0.04); }
+    </style>
   </head>
   <body>
     <div class="sidebar">
-      <div class="sidebar-title">eShelf</div>
-      <nav class="sidebar-nav">
+      <div class="sidebar-title-container">
+        <div class="sidebar-title">SKSU Library</div>
+      </div>
+      <nav class="sidebar-nav" aria-label="Main navigation">
         <a href="dashboard.html" class="active"
           ><span class="icon">📊</span> Dashboard</a
         >
@@ -23,52 +98,166 @@
         <a href="Issue.html"><span class="icon">📝</span> Issue&Return Management</a>
         <a href="membermanagement.html"><span class="icon">👥</span> Member Management</a>
         <a href="fines.html"><span class="icon">💰</span> Fines</a>
+        <a href="report.html"><span class="icon">📄</span> Report</a>
       </nav>
       <div class="logout-container">
-        <button class="profile-btn" onclick="logout()">
+        <!-- Remove logout button -->
+        <!-- <button class="profile-btn" onclick="logout()">
             <i class="fas fa-sign-out-alt"></i> Logout
-        </button>
-    </div>
+        </button> -->
+      </div>
     </div>
 
     <div class="main-content">
-      <h1 id="username-display"></h1>
+        <div class="header-right" style="float: right; margin: 20px;">
+            <div class="profile-dropdown">
+                <button class="profile-btn" id="profile-name">Profile <i class="fas fa-chevron-down"></i></button>
+                <div class="profile-dropdown-content">
+                    <a href="update_profile.html">Update Profile</a>
+                    <a href="#" onclick="logout()">Logout</a>
+                </div>
+            </div>
+          </div>
+        <div id="welcome-message" class="welcome-message">
+            <h1>Welcome! <span id="user-role"></span></h1>
+            <p id="welcome-text"></p>
+        </div>
       <div class="dashboard-cards">
         <div class="dashboard-card">
-          <h2 class="dashboard-card-title">Total Books</h2>
-          <div class="dashboard-card-content" id="total-books">Loading...</div>
+          <div class="card-header">
+            <div class="card-icon bg-blue"><i class="fas fa-book"></i></div>
+            <h2 class="dashboard-card-title">Total Books</h2>
+          </div>
+          <div class="dashboard-card-content"><span class="stat-value" id="total-books">Loading...</span></div>
         </div>
+
         <div class="dashboard-card">
-          <h2 class="dashboard-card-title">Issued Books</h2>
-          <div class="dashboard-card-content" id="issued-books">Loading...</div>
+          <div class="card-header">
+            <div class="card-icon bg-orange"><i class="fas fa-book-reader"></i></div>
+            <h2 class="dashboard-card-title">Issued Books</h2>
+          </div>
+          <div class="dashboard-card-content"><span class="stat-value" id="issued-books">Loading...</span></div>
         </div>
+
         <div class="dashboard-card">
-          <h2 class="dashboard-card-title">Returned Books</h2>
-          <div class="dashboard-card-content" id="returned-books">Loading...</div>
+          <div class="card-header">
+            <div class="card-icon bg-green"><i class="fas fa-undo"></i></div>
+            <h2 class="dashboard-card-title">Returned Books</h2>
+          </div>
+          <div class="dashboard-card-content"><span class="stat-value" id="returned-books">Loading...</span></div>
         </div>
+
         <div class="dashboard-card">
-          <h2 class="dashboard-card-title">Overdue Books</h2>
-          <div class="dashboard-card-content" id="overdue-books">Loading...</div>
+          <div class="card-header">
+            <div class="card-icon bg-red"><i class="fas fa-exclamation-circle"></i></div>
+            <h2 class="dashboard-card-title">Overdue Books</h2>
+          </div>
+          <div class="dashboard-card-content"><span class="stat-value" id="overdue-books">Loading...</span></div>
         </div>
+
         <div class="dashboard-card">
-          <h2 class="dashboard-card-title">Total Members</h2>
-          <div class="dashboard-card-content" id="total-members">Loading...</div>
+          <div class="card-header">
+            <div class="card-icon bg-purple"><i class="fas fa-users"></i></div>
+            <h2 class="dashboard-card-title">Total Members</h2>
+          </div>
+          <div class="dashboard-card-content"><span class="stat-value" id="total-members">Loading...</span></div>
+        </div>
+        </div>
+
+        <div class="charts-grid" style="margin-top:18px; grid-template-columns: 2fr 1fr; align-items:start;">
+          <div class="chart-card" style="min-height:520px; gap:12px;">
+            <div>
+                <h4 style="margin:0 0 8px 0;">Issued Books — By Month</h4>
+              <canvas id="issuedWeekChart" height="220"></canvas>
+            </div>
+            <div style="margin-top:12px;">
+              <h4 style="margin:0 0 8px 0;">Returned Books — By Month</h4>
+              <canvas id="returnedWeekChart" height="220"></canvas>
+            </div>
+            <!-- overdue chart moved to right column under members donut -->
+          </div>
+          <div class="chart-card" style="min-height:520px;">
+            <h4 style="margin:0 0 8px 0;">Members — Role Breakdown</h4>
+            <canvas id="rolesDonutChart" height="220"></canvas>
+          
+            <!-- place fines summary under members donut -->
+            <div id="fines-summary-mini" style="margin-top:12px; font-weight:700; font-size:0.95rem; color:#0b1220; text-align:center;">Fines Collected: ₱0</div>
+
+            <div style="margin-top:12px;">
+              <h4 style="margin:0 0 8px 0;">Overdue Books — By Month</h4>
+              <canvas id="overdueMonthChart" height="220"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="stats-table-container" style="margin-top:24px;">
+          <h3 style="margin:0 0 12px 0;">Summary Table</h3>
+          <table class="stats-table" style="width:100%; border-collapse:collapse; background:#fff; box-shadow:0 4px 8px rgba(0,0,0,0.06); border-radius:8px; overflow:hidden;">
+              <thead style="background:#f5f7fb;">
+                <tr>
+                  <th style="text-align:left; padding:12px 16px;">Metric</th>
+                  <th style="text-align:right; padding:12px 16px;">Value</th>
+                  <th style="text-align:center; padding:12px 16px;">Actions</th>
+                </tr>
+              </thead>
+            <tbody>
+                <tr>
+                  <td>Total Books</td>
+                  <td class="value"><span id="total-books-table">Loading...</span></td>
+                  <td style="text-align:center;"><button class="toggle-btn" data-target="details-total-books">Show</button></td>
+                </tr>
+                <tr class="details-row" id="details-total-books"><td colspan="3"><div class="details-content"></div></td></tr>
+              <tr>
+                  <td>Issued Books</td>
+                  <td class="value"><span id="issued-books-table">Loading...</span></td>
+                  <td style="text-align:center;"><button class="toggle-btn" data-target="details-issued-books">Show</button></td>
+                </tr>
+                <tr class="details-row" id="details-issued-books"><td colspan="3"><div class="details-content"></div></td></tr>
+              <tr>
+                  <td>Returned Books</td>
+                  <td class="value"><span id="returned-books-table">Loading...</span></td>
+                  <td style="text-align:center;"><button class="toggle-btn" data-target="details-returned-books">Show</button></td>
+                </tr>
+                <tr class="details-row" id="details-returned-books"><td colspan="3"><div class="details-content"></div></td></tr>
+              <tr>
+                  <td>Overdue Books</td>
+                  <td class="value"><span id="overdue-books-table">Loading...</span></td>
+                  <td style="text-align:center;"><button class="toggle-btn" data-target="details-overdue-books">Show</button></td>
+                </tr>
+                <tr class="details-row" id="details-overdue-books"><td colspan="3"><div class="details-content"></div></td></tr>
+              <tr>
+                  <td>Total Members</td>
+                  <td class="value"><span id="total-members-table">Loading...</span></td>
+                  <td style="text-align:center;"><button class="toggle-btn" data-target="details-total-members">Show</button></td>
+                </tr>
+                <tr class="details-row" id="details-total-members"><td colspan="3"><div class="details-content"></div></td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
     <script>
       document.addEventListener('DOMContentLoaded', async () => {
+        console.log('Dashboard script loaded and running');
         const username = localStorage.getItem('username');
         if (username) {
-          document.getElementById('username-display').textContent = `Hello, ${username}`;
+          const response = await fetch(`/api/members/${username}`);
+          const user = await response.json();
+          document.getElementById('profile-name').innerHTML = `${user.fullname} <i class="fas fa-chevron-down"></i>`;
+          const welcomeText = user.role === 'librarian' ? 
+            'Manage your library efficiently and effectively.' : 
+            'Explore and manage your borrowed books with ease.';
+          document.getElementById('welcome-text').textContent = welcomeText;
+          document.getElementById('user-role').textContent = `${user.role.charAt(0).toUpperCase() + user.role.slice(1)}`;
         }
 
         try {
-          const [booksResponse, issuedBooksResponse, returnedBooksResponse, membersResponse] = await Promise.all([
+          const [booksResponse, issuedBooksResponse, returnedBooksResponse, membersResponse, finesResponse] = await Promise.all([
             fetch('/api/books'),
             fetch('/api/issued-books'),
             fetch('/api/returned-books'),
-            fetch('/api/members')
+            fetch('/api/members'),
+            fetch('/api/fines')
           ]);
 
           if (!booksResponse.ok || !issuedBooksResponse.ok || !returnedBooksResponse.ok || !membersResponse.ok) {
@@ -79,6 +268,7 @@
           const issuedBooks = await issuedBooksResponse.json();
           const returnedBooks = await returnedBooksResponse.json();
           const members = await membersResponse.json();
+          const finesSummary = await finesResponse.json().catch(() => ({ amountCollected: 0 }));
 
           const overdueBooks = issuedBooks.filter(book => {
             const dueDate = new Date(book.dueDate);
@@ -91,6 +281,244 @@
           document.getElementById('returned-books').textContent = returnedBooks.length;
           document.getElementById('overdue-books').textContent = overdueBooks.length;
           document.getElementById('total-members').textContent = members.length;
+
+          // populate table values if present
+          const setIfExists = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+          setIfExists('total-books-table', books.length);
+          setIfExists('issued-books-table', issuedBooks.length);
+          setIfExists('returned-books-table', returnedBooks.length);
+          setIfExists('overdue-books-table', overdueBooks.length);
+          setIfExists('total-members-table', members.length);
+
+          // helpers to render details lists
+          const renderList = (containerSelector, items, formatter) => {
+            const container = document.querySelector(containerSelector + ' .details-content');
+            if (!container) return;
+            if (!items || items.length === 0) {
+              container.innerHTML = '<em style="color:#64748b">No items to show.</em>';
+              return;
+            }
+            const list = document.createElement('ul');
+            list.style.margin = '0';
+            list.style.padding = '0 0 0 18px';
+            items.slice(0, 100).forEach(it => {
+              const li = document.createElement('li');
+              li.style.margin = '6px 0';
+              li.textContent = formatter ? formatter(it) : (typeof it === 'string' ? it : JSON.stringify(it));
+              list.appendChild(li);
+            });
+            container.innerHTML = '';
+            container.appendChild(list);
+          };
+
+          // prepare data for details
+          const bookTitles = books.map(b => b.title || b.name || b.bookName || (b.book && (b.book.title || b.book.name)) || ('#' + (b._id || '')) );
+          const issuedList = issuedBooks.map(i => {
+            const title = i.title || (i.book && (i.book.title || i.book.name)) || i.bookTitle || 'Book #' + (i.bookId || i._id || '');
+            const issuedTo = i.memberName || (i.member && (i.member.fullname || i.member.name)) || i.issuedTo || '';
+            return issuedTo ? `${title} — ${issuedTo}` : title;
+          });
+          const returnedList = returnedBooks.map(r => r.title || (r.book && (r.book.title || r.book.name)) || r.bookTitle || ('Book #' + (r.bookId || r._id || '')));
+          const overdueList = overdueBooks.map(i => {
+            const title = i.title || (i.book && (i.book.title || i.book.name)) || i.bookTitle || ('Book #' + (i.bookId || i._id || ''));
+            const issuedTo = i.memberName || (i.member && (i.member.fullname || i.member.name)) || i.issuedTo || '';
+            return issuedTo ? `${title} — ${issuedTo}` : title;
+          });
+          const memberNames = members.map(m => m.fullname || m.name || m.username || ('#' + (m._id || '')));
+
+          // register toggle handlers
+          document.querySelectorAll('.toggle-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const target = document.getElementById(btn.dataset.target);
+              if (!target) return;
+              const visible = target.style.display === 'table-row';
+              // close others
+              document.querySelectorAll('.details-row').forEach(r => r.style.display = 'none');
+              if (!visible) {
+                // populate based on target
+                if (btn.dataset.target === 'details-total-books') renderList('#' + btn.dataset.target, bookTitles);
+                if (btn.dataset.target === 'details-issued-books') renderList('#' + btn.dataset.target, issuedList);
+                if (btn.dataset.target === 'details-returned-books') renderList('#' + btn.dataset.target, returnedList);
+                if (btn.dataset.target === 'details-overdue-books') renderList('#' + btn.dataset.target, overdueList);
+                if (btn.dataset.target === 'details-total-members') renderList('#' + btn.dataset.target, memberNames);
+                target.style.display = 'table-row';
+                btn.textContent = 'Hide';
+              } else {
+                target.style.display = 'none';
+                btn.textContent = 'Show';
+              }
+            });
+          });
+
+          // --- Charts: compute weekly/monthly aggregates and render with Chart.js ---
+          const parseDate = (val) => {
+            if (!val) return null;
+            const d = new Date(val);
+            return isNaN(d) ? null : d;
+          };
+
+          const startOfWeek = (date) => {
+            const d = new Date(date);
+            const day = d.getDay(); // 0 Sun..6 Sat
+            const diff = (day + 6) % 7; // make Monday=0
+            d.setDate(d.getDate() - diff);
+            d.setHours(0,0,0,0);
+            return d;
+          };
+
+          const formatWeekLabel = (d) => {
+            const end = new Date(d);
+            end.setDate(end.getDate() + 6);
+            return `${d.toLocaleDateString(undefined,{month:'short',day:'numeric'})} - ${end.toLocaleDateString(undefined,{month:'short',day:'numeric'})}`;
+          };
+
+          const lastNWeeks = (n) => {
+            const weeks = [];
+            const today = new Date();
+            let cur = startOfWeek(today);
+            for (let i = 0; i < n; i++) {
+              weeks.unshift(new Date(cur));
+              cur.setDate(cur.getDate() - 7);
+            }
+            return weeks;
+          };
+
+          const lastNMonths = (n) => {
+            const months = [];
+            const now = new Date();
+            for (let i = n-1; i >=0; i--) {
+              const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+              months.push(d);
+            }
+            return months;
+          };
+
+          // Collect date values for issued and returned
+          const issuedDates = issuedBooks.map(i => parseDate(i.issueDate || i.issuedAt || i.issuedOn || i.createdAt || i.date || i.dateIssued)).filter(Boolean);
+          const returnedDates = returnedBooks.map(r => parseDate(r.returnDate || r.returnedAt || r.dateReturned || r.returnedOn || r.updatedAt)).filter(Boolean);
+          const overdueDates = overdueBooks.map(o => parseDate(o.dueDate || o.due || o.date || o.createdAt)).filter(Boolean);
+
+          // Weekly bins (last 8 weeks)
+          const weekCount = 8;
+          const weeks = lastNWeeks(weekCount);
+          const weekLabels = weeks.map(w => formatWeekLabel(w));
+          const weekKeys = weeks.map(w => w.getTime());
+
+          const countByWeek = (dates) => {
+            const counts = Array(weekCount).fill(0);
+            dates.forEach(d => {
+              const wkStart = startOfWeek(d).getTime();
+              const idx = weekKeys.indexOf(wkStart);
+              if (idx !== -1) counts[idx]++;
+            });
+            return counts;
+          };
+
+          const issuedByWeek = countByWeek(issuedDates);
+          const returnedByWeek = countByWeek(returnedDates);
+
+          // Monthly bins (last 12 months)
+          const monthCount = 12;
+          const months = lastNMonths(monthCount);
+          const monthLabels = months.map(m => m.toLocaleString(undefined,{month:'short', year:'numeric'}));
+
+          const countByMonth = (dates) => {
+            const counts = Array(monthCount).fill(0);
+            dates.forEach(d => {
+              const y = d.getFullYear();
+              const m = d.getMonth();
+              for (let i=0;i<months.length;i++){
+                if (months[i].getFullYear()===y && months[i].getMonth()===m) { counts[i]++; break; }
+              }
+            });
+            return counts;
+          };
+
+          const issuedByMonth = countByMonth(issuedDates);
+          const returnedByMonth = countByMonth(returnedDates);
+          const overdueByMonth = countByMonth(overdueDates);
+
+          // Chart helper with optional extra options (for axis arrows)
+          const axisArrowPlugin = {
+            id: 'axisArrow',
+            afterDraw(chart, args, options) {
+              const target = options && options.target;
+              if (!target || chart.canvas.id !== target) return;
+              const ctx = chart.ctx;
+              const area = chart.chartArea;
+              const left = area.left, right = area.right, top = area.top, bottom = area.bottom;
+              const size = Math.min(12, (bottom - top) * 0.06);
+              ctx.save();
+              ctx.fillStyle = 'rgba(15,23,42,0.9)';
+              // x-axis arrow (right)
+              ctx.beginPath();
+              ctx.moveTo(right + size, bottom);
+              ctx.lineTo(right, bottom - size/2);
+              ctx.lineTo(right, bottom + size/2);
+              ctx.closePath();
+              ctx.fill();
+              // y-axis arrow (top)
+              ctx.beginPath();
+              ctx.moveTo(left, top - size);
+              ctx.lineTo(left - size/2, top);
+              ctx.lineTo(left + size/2, top);
+              ctx.closePath();
+              ctx.fill();
+              ctx.restore();
+            }
+          };
+          Chart.register(axisArrowPlugin);
+
+          const makeChart = (ctxId, type, labels, data, color, extraOptions) => {
+            const ctx = document.getElementById(ctxId);
+            if (!ctx) return null;
+            if (ctx._chart) ctx._chart.destroy();
+            const dataset = { label: '', data: data, borderColor: color, backgroundColor: (type==='line' ? color.replace(/\d?\.?\d*\)$/, '0.12)') : color), tension:0.35 };
+            if (type === 'line') { dataset.pointRadius = 5; dataset.pointBackgroundColor = '#fff'; dataset.pointBorderWidth = 2; dataset.borderWidth = 3; }
+            if (type === 'bar') { dataset.backgroundColor = color; }
+
+            const options = Object.assign({ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales: { x:{ grid:{display:false} }, y:{ beginAtZero:true, ticks:{precision:0} } } }, extraOptions || {});
+
+            ctx._chart = new Chart(ctx, { type, data: { labels, datasets: [dataset] }, options });
+            return ctx._chart;
+          };
+
+          // Issued books line chart (monthly)
+          makeChart('issuedWeekChart','line', monthLabels, issuedByMonth, 'rgba(37,99,235,0.95)', { plugins: { axisArrow: { target: 'issuedWeekChart' } }, scales: { x:{ grid:{color:'rgba(15,23,42,0.04)'} }, y:{ grid:{color:'rgba(15,23,42,0.04)'} } } });
+
+          // Returned books line chart (monthly, red)
+          makeChart('returnedWeekChart','line', monthLabels, returnedByMonth, 'rgba(239,68,68,0.95)', { plugins: { axisArrow: { target: 'returnedWeekChart' } }, scales: { x:{ grid:{color:'rgba(15,23,42,0.04)'} }, y:{ grid:{color:'rgba(15,23,42,0.04)'} } } });
+
+          // Members role breakdown (doughnut)
+          const roleMap = {};
+          (members || []).forEach(m => { const r = (m.role||'unknown'); roleMap[r] = (roleMap[r]||0) + 1; });
+          const roleLabels = Object.keys(roleMap);
+          const roleData = roleLabels.map(l => roleMap[l]);
+
+          const makeDoughnut = (ctxId, labels, data, colors) => {
+            const ctx = document.getElementById(ctxId);
+            if (!ctx) return null;
+            if (ctx._chart) ctx._chart.destroy();
+            ctx._chart = new Chart(ctx, {
+              type: 'doughnut',
+              data: { labels, datasets: [{ data, backgroundColor: colors || ['#10b981','#8b5cf6','#2563eb','#f59e0b','#ef4444'] }] },
+              options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}}, cutout:'60%' }
+            });
+            return ctx._chart;
+          };
+
+          makeDoughnut('rolesDonutChart', roleLabels, roleData, ['#10b981','#8b5cf6','#2563eb','#f59e0b','#ef4444']);
+
+          // show fines summary under members donut
+          try {
+            const fs = document.getElementById('fines-summary-mini');
+            if (fs) fs.textContent = `Fines Collected: ₱${(finesSummary && finesSummary.amountCollected) ? finesSummary.amountCollected : 0}`;
+          } catch (e) {
+            console.warn('Could not set fines summary', e);
+          }
+
+          // render overdue monthly chart (bar)
+          makeChart('overdueMonthChart','bar', monthLabels, overdueByMonth, 'rgba(220,38,38,0.9)');
         } catch (error) {
           console.error('Error loading dashboard data:', error);
           document.getElementById('total-books').textContent = 'Error';
@@ -98,6 +526,12 @@
           document.getElementById('returned-books').textContent = 'Error';
           document.getElementById('overdue-books').textContent = 'Error';
           document.getElementById('total-members').textContent = 'Error';
+          const setErrorIfExists = id => { const el = document.getElementById(id); if (el) el.textContent = 'Error'; };
+          setErrorIfExists('total-books-table');
+          setErrorIfExists('issued-books-table');
+          setErrorIfExists('returned-books-table');
+          setErrorIfExists('overdue-books-table');
+          setErrorIfExists('total-members-table');
         }
       });
 

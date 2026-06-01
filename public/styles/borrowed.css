@@ -7,11 +7,14 @@ body {
     min-height: 100vh;
 }
 
+/* Ensure sidebar text is black on all pages */
+.sidebar, .sidebar .sidebar-title, .sidebar-nav a, .sidebar-logo { color: #000 !important; }
+
 .sidebar {
-    background-color: #0fb44b;
+    background-color: white;
     color: white;
     padding: 20px;
-    width: 300px;
+    width: 240px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -21,10 +24,10 @@ body {
 }
 
 .sidebar-title {
-    font-size: 2rem;
-    font-weight: 700;
-    padding-top: 12px;
-    margin-bottom: 40px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding-top: 8px;
+    margin-bottom: 20px;
     text-align: center;
 }
 
@@ -80,7 +83,7 @@ body {
 .main-content {
     flex-grow: 1;
     padding: 30px;
-    margin-left: 320px; /* Adjusted margin to account for fixed sidebar width */
+    margin-left: 260px; /* Adjusted margin to account for fixed sidebar width */
 }
 
 .header {

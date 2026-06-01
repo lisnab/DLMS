@@ -24,6 +24,7 @@ app.use(cors());
 // Ensure schema definitions are correct
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
+  fullname: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   phone: { type: String, required: true },
   password: { type: String, required: true },
@@ -66,6 +67,19 @@ const memberSchema = new mongoose.Schema({
 
 const Member = mongoose.model('Member', memberSchema);
 
+const fineSchema = new mongoose.Schema({
+  amountCollected: { type: Number, default: 0 }
+});
+
+const Fine = mongoose.model('Fine', fineSchema);
+
+const notificationSchema = new mongoose.Schema({
+  message: { type: String, required: true },
+  date: { type: Date, default: Date.now }
+});
+
+const Notification = mongoose.model('Notification', notificationSchema);
+
 // Ensure routes are correctly handling requests
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
@@ -81,6 +95,10 @@ app.get('/user_dashboard.html', (req, res) => {
 
 app.get('/membermanagement.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'membermanagement.html'));
+});
+
+app.get('/report.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'report.html'));
 });
 
 // Login route
@@ -116,11 +134,11 @@ app.post('/login', async (req, res) => {
 
 // Register route
 app.post('/register', async (req, res) => {
-  const { username, email, phone, password, confirmPassword } = req.body;
+  const { username, fullname, email, phone, password, confirmPassword } = req.body;
 
   console.log('Received data:', req.body);
 
-  if (!username || !email || !phone || !password || !confirmPassword) {
+  if (!username || !fullname || !email || !phone || !password || !confirmPassword) {
     return res.status(400).send('All fields are required');
   }
 
@@ -145,6 +163,7 @@ app.post('/register', async (req, res) => {
 
     const user = new User({
       username,
+      fullname,
       email,
       phone,
       password: hashedPassword,
@@ -153,6 +172,7 @@ app.post('/register', async (req, res) => {
 
     await user.save();
     console.log('User registered successfully:', username);
+    await addNotification(`User ${username} registered successfully.`);
     res.redirect('/login.html');
   } catch (err) {
     console.error('Registration error:', err);
@@ -173,6 +193,7 @@ app.post('/api/books', async (req, res) => {
   const newBook = new Book({ bookId, title, author, isbn, quantity });
   try {
     await newBook.save();
+    await addNotification(`Book ${title} added successfully.`);
     res.status(201).json(newBook);
   } catch (error) {
     res.status(500).json({ message: 'Failed to add book' });
@@ -192,6 +213,7 @@ app.delete('/api/books/:bookId', async (req, res) => {
     if (!book) {
       return res.status(404).json({ message: 'Book not found' });
     }
+    await addNotification(`Book ${book.title} deleted successfully.`);
     res.json(book);
   } catch (error) {
     res.status(500).json({ message: 'Failed to delete book' });
@@ -205,6 +227,7 @@ app.put('/api/books/:bookId', async (req, res) => {
     if (!book) {
       return res.status(404).send('Book not found');
     }
+    await addNotification(`Book ${book.title} updated successfully.`);
     res.send(book);
   } catch (err) {
     console.error('Error updating book:', err.message);
@@ -245,7 +268,7 @@ app.post('/issue-book', async (req, res) => {
     });
 
     await issuedBook.save();
-
+    await addNotification(`Book ${bookName} issued to ${studentName}.`);
     console.log('Book issued successfully:', bookId);
     res.status(201).json(issuedBook);
   } catch (err) {
@@ -290,6 +313,15 @@ app.post('/return-book/:bookId', async (req, res) => {
       await book.save();
     }
 
+    const dueDate = new Date(issuedBook.dueDate);
+    const currentDate = new Date(returnDate);
+    if (currentDate > dueDate) {
+      const daysOverdue = Math.floor((currentDate - dueDate) / (1000 * 60 * 60 * 24));
+      const fineAmount = daysOverdue * 25; // Assuming a fine of 25 PHP per day
+      await addFineToAmountCollected(fineAmount);
+    }
+
+    await addNotification(`Book ${issuedBook.bookName} returned by ${issuedBook.studentName}.`);
     console.log('Book returned successfully:', bookId);
     res.status(200).json(issuedBook);
   } catch (err) {
@@ -311,6 +343,7 @@ app.delete('/api/returned-books/:bookId', async (req, res) => {
     if (!book) {
       return res.status(404).json({ message: 'Returned book not found' });
     }
+    await addNotification(`Returned book ${book.bookName} deleted successfully.`);
     res.json(book);
   } catch (error) {
     res.status(500).json({ message: 'Failed to delete returned book' });
@@ -323,14 +356,28 @@ app.get('/api/members', async (req, res) => {
   res.json(members);
 });
 
+// Get member by student ID route
+app.get('/api/members/:studentId', async (req, res) => {
+  try {
+    const member = await User.findOne({ username: req.params.studentId });
+    if (!member) {
+      return res.status(404).json({ message: 'Student ID not found' });
+    }
+    res.json(member);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch member' });
+  }
+});
+
 // Add member route
 app.post('/api/members', async (req, res) => {
-  const { username, email, phone, password, role } = req.body;
+  const { username, fullname, email, phone, password, role } = req.body;
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newMember = new User({ username, email, phone, password: hashedPassword, role }); // Use User model to add member
+    const newMember = new User({ username, fullname, email, phone, password: hashedPassword, role }); // Use User model to add member
     await newMember.save();
+    await addNotification(`Member ${fullname} added successfully.`);
     res.status(201).json(newMember);
   } catch (error) {
     res.status(500).json({ message: 'Failed to add member' });
@@ -344,6 +391,7 @@ app.put('/api/members/:id', async (req, res) => {
     if (!member) {
       return res.status(404).send('Member not found');
     }
+    await addNotification(`Member ${member.fullname} updated successfully.`);
     res.send(member);
   } catch (err) {
     console.error('Error updating member:', err.message);
@@ -358,12 +406,73 @@ app.delete('/api/members/:id', async (req, res) => {
     if (!member) {
       return res.status(404).json({ message: 'Member not found' });
     }
+    await addNotification(`Member ${member.fullname} deleted successfully.`);
     res.json(member);
   } catch (error) {
     res.status(500).json({ message: 'Failed to delete member' });
   }
 });
 
+// Add fine route
+app.post('/api/add-fine', async (req, res) => {
+  const { fineAmount } = req.body;
+
+  try {
+    let fine = await Fine.findOne();
+    if (!fine) {
+      fine = new Fine();
+    }
+    fine.amountCollected += fineAmount;
+    await fine.save();
+
+    await addNotification(`Fine of ₱${fineAmount} added.`);
+    res.status(200).json({ amountCollected: fine.amountCollected });
+  } catch (error) {
+    console.error('Error adding fine:', error);
+    res.status(500).json({ message: 'Failed to add fine' });
+  }
+});
+
+// Get notifications route
+app.get('/api/notifications', async (req, res) => {
+  const notifications = await Notification.find().sort({ date: -1 }).limit(10);
+  res.json(notifications);
+});
+
+// Get fines summary
+app.get('/api/fines', async (req, res) => {
+  try {
+    let fine = await Fine.findOne();
+    if (!fine) fine = { amountCollected: 0 };
+    res.json({ amountCollected: fine.amountCollected });
+  } catch (error) {
+    console.error('Failed to fetch fine summary', error);
+    res.status(500).json({ amountCollected: 0 });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
+
+async function addFineToAmountCollected(fineAmount) {
+  try {
+    let fine = await Fine.findOne();
+    if (!fine) {
+      fine = new Fine();
+    }
+    fine.amountCollected += fineAmount;
+    await fine.save();
+  } catch (error) {
+    console.error('Error adding fine to amount collected:', error);
+  }
+}
+
+async function addNotification(message) {
+  try {
+    const notification = new Notification({ message });
+    await notification.save();
+  } catch (error) {
+    console.error('Error adding notification:', error);
+  }
+}

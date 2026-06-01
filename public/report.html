@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/report.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        @media print {
+            table {
+                width: 100%;
+                font-size: 10px;
+                border-collapse: collapse;
+            }
+            th, td {
+                padding: 4px;
+                border: 1px solid #ddd;
+                text-align: left;
+            }
+            th {
+                background-color: #f2f2f2;
+            }
+        }
+        .profile-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .profile-btn {
+            background: none;
+            border: none;
+            color: gray;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+        }
+        .profile-btn i {
+            margin-left: 5px;
+        }
+        .profile-dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+        .profile-dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+        .profile-dropdown-content a:hover {
+            background-color: #f1f1f1;
+        }
+        .profile-dropdown:hover .profile-dropdown-content {
+            display: block;
+        }
+        .notification-icon {
+            display: none; /* Hide notification icon */
+        }
+        .sidebar-nav {
+            margin-top: 0;
+        }
+        .logout-container {
+            padding: 2px 6px;
+            text-align: center;
+            margin-top: auto;
+            margin-left: 30px;
+            color: #0fb44b; /* Change text color to green */
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/recharts/umd/Recharts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.13/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-title-container">
+            <div class="sidebar-title">SKSU Library</div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="dashboard.html"><span class="icon">📊</span> Dashboard</a>
+            <a href="bookmanagement.html"><span class="icon">📚</span> Book Management</a>
+            <a href="Issue.html"><span class="icon">📝</span> Issue&Return Management</a>
+            <a href="membermanagement.html"><span class="icon">👥</span> Member Management</a>
+            <a href="fines.html"><span class="icon">💰</span> Fines</a>
+            <a href="report.html" class="active"><span class="icon">📄</span> Report</a>
+        </nav>
+        <div class="logout-container">
+            <!-- Remove logout button -->
+            <!-- <button class="profile-btn" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button> -->
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="header-right" style="float: right; margin: 20px;">
+            <!-- Remove notification icon -->
+            <!-- <div class="notification-icon" id="notification-icon">
+                <i style="font-size:24px" class="fa">&#xf0f3;</i>
+                <span class="badge" id="notification-count">0</span>
+                <div class="notification-dropdown-content" id="notification-dropdown-content">
+                    <!-- Notifications will be dynamically added here -->
+                <!-- </div>
+            </div> -->
+            <div class="profile-dropdown">
+                <button class="profile-btn" id="profile-name">Profile <i class="fas fa-chevron-down"></i></button>
+                <div class="profile-dropdown-content">
+                    <a href="update_profile.html">Update Profile</a>
+                    <a href="#" onclick="logout()">Logout</a>
+                </div>
+            </div>
+        </div>
+        <h1> Report</h1>
+        <div class="dashboard-card">
+            <h2 class="dashboard-card-title"><span class="icon">📚</span> Total Overdue Books</h2>
+            <div class="dashboard-card-content" id="total-overdue-books">Loading...</div>
+        </div>
+        <div class="dashboard-card">
+            <h2 class="dashboard-card-title"><span class="icon">📊</span> Overdue Breakdown</h2>
+            <div class="dashboard-card-content" id="overdue-breakdown">Loading...</div>
+        </div>
+        <div class="dashboard-card">
+            <h2 class="dashboard-card-title"><span class="icon">📄</span> Overdue Books</h2>
+            <div class="dashboard-card-content">
+                <div id="overdue-current-month" style="float: left; margin-right: 20px;"></div>
+                <table id="overdue-books-table">
+                    <thead>
+                        <tr>
+                            <th>Book ID</th>
+                            <th>Book Name</th>
+                            <th>Student ID</th>
+                            <th>Student Name</th>
+                            <th>Due Date</th>
+                            <th>Days Overdue</th>
+                            <th>Fine Amount (PHP)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="overdue-books-list"></tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="6" style="text-align: right;">Total Fine Amount:</td>
+                            <td id="total-fine-amount">₱0.00</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+        
+        <div class="dashboard-card">
+            <h2 class="dashboard-card-title"><span class="icon">📚</span> Total Not Returned Overdue Books</h2>
+            <div class="dashboard-card-content" id="total-not-returned-overdue-books">Loading...</div>
+        </div>
+        <div class="dashboard-card">
+            <h2 class="dashboard-card-title"><span class="icon">🔄</span> Total Returned Books</h2>
+            <div class="dashboard-card-content" id="total-returned-books">Loading...</div>
+        </div>
+        
+        <div class="dashboard-card">
+            <h2 class="dashboard-card-title"><span class="icon">📚</span> Returned Books</h2>
+            <div class="dashboard-card-content">
+                <div id="current-month" style="float: left; margin-right: 20px;"></div>
+                <table id="returned-books-table">
+                    <thead>
+                        <tr>
+                            <th>Book ID</th>
+                            <th>Book Name</th>
+                            <th>Student ID</th>
+                            <th>Student Name</th>
+                            <th>Course & Section</th>
+                            <th>Issue Date</th>
+                            <th>Due Date</th>
+                            <th>Return Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="returned-books-list"></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="dashboard-card">
+            <h2 class="dashboard-card-title"><span class="icon">📚</span> Total Books Issued</h2>
+            <div class="dashboard-card-content" id="total-books-issued">Loading...</div>
+        </div>
+        <div class="dashboard-card">
+            <h2 class="dashboard-card-title"><span class="icon">📚</span> Most Borrowed Books</h2>
+            <div class="dashboard-card-content">
+                <table id="most-borrowed-books-table">
+                    <thead>
+                        <tr>
+                            <th>Book ID</th>
+                            <th>Book Name</th>
+                            <th>Times Borrowed</th>
+                        </tr>
+                    </thead>
+                    <tbody id="most-borrowed-books-list"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="dashboard-card">
+            <h2 class="dashboard-card-title"><span class="icon">📄</span> Export</h2>
+            <div class="dashboard-card-content">
+                <select id="export-select" onchange="exportTable()">
+                    <option value="">Select Export Option</option>
+                    <option value="overdue-books">Overdue Books</option>
+                    <option value="most-borrowed-books">Most Borrowed Books</option>
+                    <option value="returned-books">Returned Books</option>
+                    <option value="export-all">Export All</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Remove Notification Container -->
+        <!-- <div id="notification-container"></div> -->
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const currentMonth = new Date().toLocaleString('default', { month: 'long' });
+            document.getElementById('current-month').textContent = `Current Month: ${currentMonth}`;
+            document.getElementById('overdue-current-month').textContent = `Current Month: ${currentMonth}`;
+            await loadReturnedBooks();
+            await loadFines();
+            await loadIssuedBooks();
+
+            const username = localStorage.getItem('username');
+            if (username) {
+                const response = await fetch(`/api/members/${username}`);
+                const user = await response.json();
+                document.getElementById('profile-name').innerHTML = `${user.fullname} <i class="fas fa-chevron-down"></i>`;
+            }
+        });
+
+        async function loadReturnedBooks() {
+            try {
+                const response = await fetch('/api/returned-books');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch returned books');
+                }
+                const returnedBooks = await response.json();
+                document.getElementById('total-returned-books').textContent = returnedBooks.length;
+                renderReturnedBooksTable(returnedBooks);
+                updateOverdueBooksTable(returnedBooks);
+                updateMostBorrowedBooks(returnedBooks);
+                updateNotReturnedOverdueBooks(returnedBooks);
+            } catch (error) {
+                console.error('Error loading returned books:', error);
+                document.getElementById('total-returned-books').textContent = 'Error';
+                showNotification('Error loading returned books', 'error');
+            }
+        }
+
+        async function loadFines() {
+            try {
+                const response = await fetch('/api/issued-books');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch issued books');
+                }
+                const issuedBooks = await response.json();
+                const overdueBooks = issuedBooks.filter(book => {
+                    const dueDate = new Date(book.dueDate);
+                    const currentDate = new Date();
+                    return currentDate > dueDate && !book.returnDate;
+                });
+                document.getElementById('total-not-returned-overdue-books').textContent = overdueBooks.length;
+            } catch (error) {
+                console.error('Error loading fines:', error);
+                document.getElementById('total-not-returned-overdue-books').textContent = 'Error';
+            }
+        }
+
+        async function loadIssuedBooks() {
+            try {
+                const response = await fetch('/api/issued-books');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch issued books');
+                }
+                const issuedBooks = await response.json();
+                document.getElementById('total-books-issued').textContent = issuedBooks.length;
+            } catch (error) {
+                console.error('Error loading issued books:', error);
+                document.getElementById('total-books-issued').textContent = 'Error';
+            }
+        }
+
+        function updateOverdueBooksTable(returnedBooks) {
+            const overdueBooksList = document.getElementById('overdue-books-list');
+            overdueBooksList.innerHTML = '';
+            let totalOverdueBooks = 0;
+            let totalFineAmount = 0;
+            const breakdown = {
+                '1-7 days': 0,
+                '8-14 days': 0,
+                '15-30 days': 0,
+                '31+ days': 0
+            };
+
+            returnedBooks.forEach(book => {
+                const dueDate = new Date(book.dueDate);
+                const returnDate = new Date(book.returnDate);
+                if (returnDate > dueDate) {
+                    totalOverdueBooks++;
+                    const daysOverdue = Math.floor((returnDate - dueDate) / (1000 * 60 * 60 * 24));
+                    const fineAmount = daysOverdue * 25; // Assuming a fine of 25 PHP per day
+                    totalFineAmount += fineAmount;
+
+                    if (daysOverdue <= 7) {
+                        breakdown['1-7 days']++;
+                    } else if (daysOverdue <= 14) {
+                        breakdown['8-14 days']++;
+                    } else if (daysOverdue <= 30) {
+                        breakdown['15-30 days']++;
+                    } else {
+                        breakdown['31+ days']++;
+                    }
+
+                    const row = `
+                        <tr>
+                            <td>${book.bookId}</td>
+                            <td>${book.bookName}</td>
+                            <td>${book.studentId}</td>
+                            <td>${book.studentName}</td>
+                            <td>${book.dueDate}</td>
+                            <td>${daysOverdue}</td>
+                            <td>₱${fineAmount.toFixed(2)}</td>
+                        </tr>
+                    `;
+                    overdueBooksList.insertAdjacentHTML('beforeend', row);
+                }
+            });
+
+            document.getElementById('total-overdue-books').textContent = totalOverdueBooks;
+            document.getElementById('total-fine-amount').textContent = `₱${totalFineAmount.toFixed(2)}`;
+            document.getElementById('overdue-breakdown').innerHTML = `
+                <p>1-7 days: ${breakdown['1-7 days']}</p>
+                <p>8-14 days: ${breakdown['8-14 days']}</p>
+                <p>15-30 days: ${breakdown['15-30 days']}</p>
+                <p>31+ days: ${breakdown['31+ days']}</p>
+            `;
+        }
+
+        function updateNotReturnedOverdueBooks(returnedBooks) {
+            let totalNotReturnedOverdueBooks = 0;
+
+            returnedBooks.forEach(book => {
+                const dueDate = new Date(book.dueDate);
+                const returnDate = new Date(book.returnDate);
+                if (returnDate > dueDate) {
+                    totalNotReturnedOverdueBooks++;
+                }
+            });
+
+            document.getElementById('total-not-returned-overdue-books').textContent = totalNotReturnedOverdueBooks;
+        }
+
+        function renderReturnedBooksTable(books) {
+            const returnedBooksList = document.getElementById('returned-books-list');
+            returnedBooksList.innerHTML = '';
+
+            books.forEach(book => {
+                const row = `
+                    <tr>
+                        <td>${book.bookId}</td>
+                        <td>${book.bookName}</td>
+                        <td>${book.studentId}</td>
+                        <td>${book.studentName}</td>
+                        <td>${book.section}</td>
+                        <td>${book.issueDate}</td>
+                        <td>${book.dueDate}</td>
+                        <td>${book.returnDate}</td>
+                    </tr>
+                `;
+                returnedBooksList.insertAdjacentHTML('beforeend', row);
+            });
+        }
+
+        function updateMostBorrowedBooks(returnedBooks) {
+            const bookCount = {};
+
+            returnedBooks.forEach(book => {
+                if (!bookCount[book.bookId]) {
+                    bookCount[book.bookId] = { bookName: book.bookName, count: 0 };
+                }
+                bookCount[book.bookId].count++;
+            });
+
+            const mostBorrowedBooks = Object.entries(bookCount)
+                .sort((a, b) => b[1].count - a[1].count)
+                .slice(0, 10);
+
+            renderMostBorrowedBooksTable(mostBorrowedBooks);
+        }
+
+        function renderMostBorrowedBooksTable(books) {
+            const mostBorrowedBooksList = document.getElementById('most-borrowed-books-list');
+            mostBorrowedBooksList.innerHTML = '';
+
+            books.forEach(([bookId, bookData]) => {
+                const row = `
+                    <tr>
+                        <td>${bookId}</td>
+                        <td>${bookData.bookName}</td>
+                        <td>${bookData.count}</td>
+                    </tr>
+                `;
+                mostBorrowedBooksList.insertAdjacentHTML('beforeend', row);
+            });
+        }
+
+        function showNotification(message, type) {
+            const notificationContainer = document.getElementById('notification-container');
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            notificationContainer.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        function logout() {
+            localStorage.removeItem('username');
+            window.location.href = 'login.html';
+        }
+
+        function exportTable() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const exportOption = document.getElementById('export-select').value;
+
+            if (exportOption === 'overdue-books') {
+                exportTableToPDF(doc, 'Overdue Books', 'overdue-books-table');
+            } else if (exportOption === 'most-borrowed-books') {
+                exportTableToPDF(doc, 'Most Borrowed Books', 'most-borrowed-books-table');
+            } else if (exportOption === 'returned-books') {
+                exportTableToPDF(doc, 'Returned Books', 'returned-books-table');
+            } else if (exportOption === 'export-all') {
+                exportAllTablesToPDF(doc);
+            }
+        }
+
+        function exportTableToPDF(doc, title, tableId) {
+            const table = document.getElementById(tableId);
+            const rows = Array.from(table.querySelectorAll('tr')).map(row => 
+                Array.from(row.querySelectorAll('th, td')).map(cell => cell.innerText)
+            );
+
+            doc.text(title, 10, 10);
+            doc.autoTable({
+                head: [rows[0]],
+                body: rows.slice(1),
+                startY: 20
+            });
+
+            doc.save(`${title}.pdf`);
+        }
+
+        function exportAllTablesToPDF(doc) {
+            const tables = [
+                { title: 'Overdue Books', id: 'overdue-books-table' },
+                { title: 'Most Borrowed Books', id: 'most-borrowed-books-table' },
+                { title: 'Returned Books', id: 'returned-books-table' }
+            ];
+
+            tables.forEach((table, index) => {
+                if (index > 0) {
+                    doc.addPage();
+                }
+                const tableElement = document.getElementById(table.id);
+                const rows = Array.from(tableElement.querySelectorAll('tr')).map(row => 
+                    Array.from(row.querySelectorAll('th, td')).map(cell => cell.innerText)
+                );
+
+                doc.text(table.title, 10, 10);
+                doc.autoTable({
+                    head: [rows[0]],
+                    body: rows.slice(1),
+                    startY: 20
+                });
+            });
+
+            doc.save('All_Tables.pdf');
+        }
+    </script>
+</body>
+</html>
