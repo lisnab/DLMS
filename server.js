@@ -1,20 +1,39 @@
+require('dotenv').config();
+
+const dns = require('dns');
+
+// Force Node.js to use Google DNS
+dns.setServers(['8.8.8.8', '8.8.4.4']);
+
 const mongoose = require('mongoose');
 const express = require('express');
 const path = require('path');
 const bodyParser = require('body-parser');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const cors = require('cors');
 
-// Ensure MongoDB connection string is correct
-mongoose.connect('mongodb://localhost:27017/yourDatabaseName', { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => {
-    console.error('Could not connect to MongoDB. Ensure MongoDB is running and accessible.', err);
-    process.exit(1);
-  });
-
 const app = express();
-const PORT = 3020;
+const PORT = process.env.PORT || 3020;
+
+// ======================
+// MongoDB Connection
+// ======================
+async function connectDB() {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 10000
+    });
+
+    console.log("✅ Connected to MongoDB");
+  } catch (err) {
+    console.log("========== MONGODB ERROR ==========");
+    console.error(err);
+    console.log("===================================");
+
+    setTimeout(connectDB, 5000);
+  }
+}
+
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -451,8 +470,9 @@ app.get('/api/fines', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Server is running on http://localhost:${PORT}`);
+  await connectDB();
 });
 
 async function addFineToAmountCollected(fineAmount) {
